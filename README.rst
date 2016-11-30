@@ -1,9 +1,10 @@
-MVtest GWAS Analysis
-====================
+libGWAS - A GWAS Parser Library for Python
+==========================================
 
-MVtest is an analysis tool that can be run on many common file formats using
-syntax similar to programs you've probably already used. Instructions for
-installation can be found below.
+libGWAS is a set of python classes and functions that can be used to 
+facilitate the development of GWAS analysis programs. The library supports
+many of the common file formats and offers a single interface for using 
+each of them. Instructions for installation can be found below.
 
 Installation
 ============
@@ -58,16 +59,11 @@ resolved, I have no plans to invest further time toward support for python 3.
 
 System Requirements
 +++++++++++++++++++
-Aside from the library dependencies, libGWAS's requirements depend largely on
-the number of SNPs and individuals being analyzed as well as the data format
-being used. In general, GWAS sized datasets will require several gigabytes of
-memory when using the traditional pedigree format, however, even 10s of
-thousands of subjects can be analyzed with less than 1 gigabyte of RAM when
-the data is formatted as transposed pedigree or PLINK's default bed format.
-
-Otherwise, it is recommended that the system be run on a unix-like system
-such as Linux or OS X, but it should work under windows as well (we can't
-offer support for running libGWAS under windows).
+Because libGWAS is simply a set of classes and functions, it has no specific
+system requirements. However, developers using the library should be aware of
+the fact that some parsers, such as the pedigree_parser will require that the
+entire dataset be loaded into memory, regardless of the filters that are in 
+play (i.e. positional filters, such as --from-kb and --to-kb). 
 
 Running Unit Tests
 ++++++++++++++++++
@@ -77,7 +73,7 @@ directory of the extracted archive's contents:
 
 $ `python setup.py test`
 
-If no errors are reported, then mvtest should run correctly on your system.
+If no errors are reported, then libGWAS should run correctly on your system.
 
 .. _virtual-env:
 
@@ -131,15 +127,15 @@ Once those changes have taken effect, install setuptools and scipy:
 $ `conda install pip scipy`
 
 Installing SciPy will also force the installation of NumPy, which is
-also required for running mvtest. (setuptools includes easy_install).
+also required for running libGWAS. (setuptools includes easy_install).
 
 Once that has been completed successfully, you should be ready to follow
-the standard instructions for installing mvtest.
+the standard instructions for installing libGWAS.
 
-MVtest Online Manual
+libGWAS Online Manual
 ====================
 
-The online manual can be found at http://edwards-lab.github.io/MVtest/
+The online manual can be found at http://edwards-lab.github.io/libGWAS/
 
 For developers who would like to use the GWAS parsers, the API manual can be
-found at http://edwards-lab.github.io/MVtest/api/index.html
+found at http://edwards-lab.github.io/libGWAS/api/index.html
