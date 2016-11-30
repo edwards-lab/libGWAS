@@ -7,8 +7,7 @@ import sys
 
 
 # Grab the version from the application itself for consistency
-import mvtest
-import meanvar
+import libgwas
 
 # Use the README as the long description
 def read(fname):
@@ -16,7 +15,7 @@ def read(fname):
 
 
 setuptools.setup(name="libgwas",
-    version=mvtest.__version__,
+    version=libgwas.__version__,
     author="Eric Torstenson",
     author_email="eric.s.torstenson@vanderbilt.edu",
     url="https://github.com/edwards-lab/libGWAS",

@@ -1,6 +1,6 @@
 
 __author__ = 'Eric Torstenson'
-__version__ = '0.6.1'
+__version__ = '1.0.0'
 
 import subprocess
 import sys

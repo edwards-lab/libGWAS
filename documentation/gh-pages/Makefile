@@ -25,12 +25,11 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 all:
 	ls ../../../../docs
-	rm -rf _build/html/mvtest _build/html/api
-	make -C ../mvtest html
+	rm -rf _build/html/api
 	make -C ../api html
 	make html
 	cp -r ../api/_build/html _build/html/api
-	cp -r _build/html/* ../../../../docs/MVtest/
+	cp -r _build/html/* ../../../../docs/libGWAS/
 
 
 
