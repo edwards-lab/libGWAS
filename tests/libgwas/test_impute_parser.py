@@ -13,10 +13,10 @@ import unittest
 import numpy
 import os
 
-from pygwas.data_parser import DataParser
-from pygwas.pheno_covar import PhenoCovar
-from pygwas import impute_parser
-from pygwas.boundary import BoundaryCheck
+from libgwas.data_parser import DataParser
+from libgwas.pheno_covar import PhenoCovar
+from libgwas import impute_parser
+from libgwas.boundary import BoundaryCheck
 
 
 import gzip

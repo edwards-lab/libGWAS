@@ -1,8 +1,8 @@
 import test_transped_parser
-from pygwas.data_parser import DataParser
-from pygwas.pheno_covar import PhenoCovar
-from pygwas.transposed_pedigree_parser import Parser as TransposedPedigreeParser
-from pygwas.locus import Locus
+from libgwas.data_parser import DataParser
+from libgwas.pheno_covar import PhenoCovar
+from libgwas.transposed_pedigree_parser import Parser as TransposedPedigreeParser
+from libgwas.locus import Locus
 
 
 class TestLocusBasics(test_transped_parser.TestBase):

@@ -7,12 +7,12 @@ installation can be found below.
 
 Installation
 ============
-MVtest requires python 2.7.x as well as the following libraries:
+libGWAS requires python 2.7.x as well as the following libraries:
 
 * NumPy (version 1.7.2 or later)   www.numpy.org
 * SciPY (version 0.13.2 or later)  www.scipy.org
 
-MVTest's installation will attempt to install these required components
+libGWAS's installation will attempt to install these required components
 for you, however, it requires that you have write permission to the
 installation directory. If you are using a shared system and lack the
 necessary privileges to install libraries and software yourself, you should
@@ -27,10 +27,10 @@ Install with PIP
 
 To install using python's package manager, pip, simply use the following command:
 
-$ `pip install MVtest`
+$ `pip install libGWAS`
 
 If you have proper permission to install packages, this will attempt to download
-and install all dependencies along with MVtest itself.
+and install all dependencies along with libGWAS itself.
 
 Manual Installation
 +++++++++++++++++++
@@ -40,9 +40,9 @@ a local copy of the manuals, manual installation is almost as easy.
 For users with Git installed, you can simply clone the sources using the
 following command:
 
-$ `git clone https://github.com/edwards-lab/MVtest`
+$ `git clone https://github.com/edwards-lab/libGWAS`
 
-Or you may visit the website and download the tarball directly from github: https://github.com/edwards-lab/MVtest
+Or you may visit the website and download the tarball directly from github: https://github.com/edwards-lab/libGWAS
 
 Once you have downloaded the software, simply extract the contents and run the
 following command to install it:
@@ -58,7 +58,7 @@ resolved, I have no plans to invest further time toward support for python 3.
 
 System Requirements
 +++++++++++++++++++
-Aside from the library dependencies, MVTest's requirements depend largely on
+Aside from the library dependencies, libGWAS's requirements depend largely on
 the number of SNPs and individuals being analyzed as well as the data format
 being used. In general, GWAS sized datasets will require several gigabytes of
 memory when using the traditional pedigree format, however, even 10s of
@@ -67,11 +67,11 @@ the data is formatted as transposed pedigree or PLINK's default bed format.
 
 Otherwise, it is recommended that the system be run on a unix-like system
 such as Linux or OS X, but it should work under windows as well (we can't
-offer support for running MVTest under windows).
+offer support for running libGWAS under windows).
 
 Running Unit Tests
 ++++++++++++++++++
-MVTest comes with a unit test suite which can be run prior to installation.
+libGWAS comes with a unit test suite which can be run prior to installation.
 To run the tests, simply run the following command from within the root
 directory of the extracted archive's contents:
 
@@ -87,7 +87,7 @@ Virtual ENV is a powerful too for python programmers and end users alike as it
 allows for users to deploy different versions of python applications without
 the need for root access to the machine.
 
-Because MVTest requires version 2.7, you'll need to ensure that your machine's
+Because libGWAS requires version 2.7, you'll need to ensure that your machine's
 python version is in compliance. Virtual Env basically uses the the system
 version of python, but creates a user owned environment wrapper allowing
 users to install libraries easily without administrative rights to the

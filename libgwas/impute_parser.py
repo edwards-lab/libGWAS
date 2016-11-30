@@ -1,5 +1,6 @@
-import pygwas
-from pygwas.data_parser import DataParser
+from . import ExitIf
+from . import BuildReportLine
+from data_parser import DataParser
 from parsed_locus import ParsedLocus
 from exceptions import TooManyAlleles
 from exceptions import TooFewAlleles
@@ -10,14 +11,14 @@ import os
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"
-#     This file is part of pyGWAS.
+#     This file is part of libGWAS.
 #
-#     pyGWAS is free software: you can redistribute it and/or modify
+#     libGWAS is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 #
-#     pyGWAS is distributed in the hope that it will be useful,
+#     libGWAS is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
@@ -86,19 +87,19 @@ class Parser(DataParser):
 
         """
         self.name = None
-        pygwas.ExitIf("Imputed Family file not found, %s" % (fam_details), not os.path.exists(fam_details))
+        ExitIf("Imputed Family file not found, %s" % (fam_details), not os.path.exists(fam_details))
         for file in archive_list:
-            pygwas.ExitIf("Archive file not found, %s" % (file), not os.path.exists(file))
+            ExitIf("Archive file not found, %s" % (file), not os.path.exists(file))
             if self.name is not None:
                 self.name = file.split("/")[-1].split(".")[0]
             if len(info_files) == 0:
                 info_file = file.replace(Parser.gen_ext, Parser.info_ext)
-                pygwas.ExitIf("Info file not found, %s" % (info_file), not os.path.exists(info_file))
-                pygwas.ExitIf("Info and sample files appear to be same. Is the gen_ext invalid? (%s)" % info_file, info_file == file)
+                ExitIf("Info file not found, %s" % (info_file), not os.path.exists(info_file))
+                ExitIf("Info and sample files appear to be same. Is the gen_ext invalid? (%s)" % info_file, info_file == file)
         idx = 0
         for file in info_files:
-            pygwas.ExitIf("Info file not found, %s" % (file), not os.path.exists(file))
-            pygwas.ExitIf("Info filename can't be same as sample filename, %s == %s" % (file, archive_list[idx]), file==archive_list[idx])
+            ExitIf("Info file not found, %s" % (file), not os.path.exists(file))
+            ExitIf("Info filename can't be same as sample filename, %s == %s" % (file, archive_list[idx]), file==archive_list[idx])
             idx += 1
 
         #: single file containing the subject details (similar to plink's .fam)
@@ -129,15 +130,15 @@ class Parser(DataParser):
         :return: None
         """
         global encodingpar
-        print >> file, pygwas.BuildReportLine("FAM FILE", self.fam_details)
-        print >> file, pygwas.BuildReportLine("IMPUTE_ARCHIVES", "%s:%s" % (str(self.chroms[0]), self.archives[0]))
+        print >> file, BuildReportLine("FAM FILE", self.fam_details)
+        print >> file, BuildReportLine("IMPUTE_ARCHIVES", "%s:%s" % (str(self.chroms[0]), self.archives[0]))
         idx = 0
         for arch in self.archives[1:]:
-            print >> file, pygwas.BuildReportLine("", "%s:%s" % (str(self.chroms[idx+1]), arch))
+            print >> file, BuildReportLine("", "%s:%s" % (str(self.chroms[idx+1]), arch))
             idx += 1
-        print >> file, pygwas.BuildReportLine("ENCODING", ["Additive", "Dominant", "Recessive", "Genotype", "Raw"][encoding])
-        print >> file, pygwas.BuildReportLine("INFO-EXT", Parser.info_ext)
-        print >> file, pygwas.BuildReportLine("INFO-THRESH", Parser.info_threshold)
+        print >> file, BuildReportLine("ENCODING", ["Additive", "Dominant", "Recessive", "Genotype", "Raw"][encoding])
+        print >> file, BuildReportLine("INFO-EXT", Parser.info_ext)
+        print >> file, BuildReportLine("INFO-THRESH", Parser.info_threshold)
 
     def load_family_details(self, pheno_covar):
         """Load family data updating the pheno_covar with  family ids found.

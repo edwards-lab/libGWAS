@@ -1,5 +1,4 @@
-import pygwas
-from pygwas.data_parser import DataParser
+from data_parser import DataParser
 from parsed_locus import ParsedLocus
 from . import sys_call
 from . import ExitIf
@@ -15,14 +14,14 @@ from pheno_covar import PhenoCovar
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"
-#     This file is part of pyGWAS.
+#     This file is part of libGWAS.
 #
-#     pyGWAS is free software: you can redistribute it and/or modify
+#     libGWAS is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 #
-#     pyGWAS is distributed in the hope that it will be useful,
+#     libGWAS is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
@@ -116,12 +115,12 @@ class Parser(DataParser):
 
                 if len(info_files) == 0:
                     info_file = file.replace(Parser.dosage_ext, Parser.info_ext)
-                    pygwas.ExitIf("Info file not found, %s" % (info_file), not os.path.exists(info_file))
-                    pygwas.ExitIf("Info and sample files appear to be same. Is the gen_ext invalid? (%s)" % info_file, info_file == file)
+                    ExitIf("Info file not found, %s" % (info_file), not os.path.exists(info_file))
+                    ExitIf("Info and sample files appear to be same. Is the gen_ext invalid? (%s)" % info_file, info_file == file)
                     infos.append(info_file)
                 idx+=1
             except:
-                pygwas.ExitIf("Archive file not found, %s" % (file), True)
+                ExitIf("Archive file not found, %s" % (file), True)
 
         # This is only the list of files to be processed
         self.archives = archive_list
@@ -147,20 +146,20 @@ class Parser(DataParser):
         :return: None
         """
         global encodingpar
-        print >> file, pygwas.BuildReportLine("MACH_ARCHIVES", "")
+        print >> file, libgwas.BuildReportLine("MACH_ARCHIVES", "")
         if self.chrpos_encoding:
-            print >> file, pygwas.BuildReportLine("MACH_CHRPOS",
+            print >> file, libgwas.BuildReportLine("MACH_CHRPOS",
                                     ("IDS expected to be in format chr:pos" +
                                     " SNP boundary filters might not work " +
                                     "(see manual for details)"))
         else:
-            print >> file, pygwas.BuildReportLine("MACH_CHRPOS",
+            print >> file, libgwas.BuildReportLine("MACH_CHRPOS",
                                     "IDs are treated like RSIDs")
         idx = 0
         for arch in self.archives[0:]:
-            print >> file, pygwas.BuildReportLine("", "%s:%s" % (self.archives[idx], self.info_files[idx]))
+            print >> file, libgwas.BuildReportLine("", "%s:%s" % (self.archives[idx], self.info_files[idx]))
             idx += 1
-        print >> file, pygwas.BuildReportLine("ENCODING", ["Dosage", "Genotype"][encoding])
+        print >> file, libgwas.BuildReportLine("ENCODING", ["Dosage", "Genotype"][encoding])
 
 
     def load_family_details(self, pheno_covar):
@@ -299,7 +298,7 @@ class Parser(DataParser):
                 if self.chrpos_encoding:
                     marker = [int(x) for x in loc.split(":")[0:2]]
                     if len(marker) < 2:
-                        raise pygwas.exceptions.MalformedInputFile("MACH .info"+
+                        raise libgwas.exceptions.MalformedInputFile("MACH .info"+
                                 " file IDs must be in the format chrom:rsid")
                     if len(marker) > 2:
                         self.rsids.append(marker[2])

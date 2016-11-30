@@ -1,7 +1,5 @@
-include doc/MVtest.pdf
-include doc/MVtestAPI.pdf
+include doc/libGWAS-API.pdf
 include README.md
 include CHANGES
 include ez_setup.py
-include tests/meanvar/bedfiles/*
-include tests/pygwas/bedfiles/*
+include tests/libgwas/bedfiles/*

@@ -3,6 +3,6 @@
 # it's recommended that you update to a newer version, though, it could
 # be that it will work.
 
-mvtest
+libgwas
 SciPy>=0.12
 NumPy>=1.7.1

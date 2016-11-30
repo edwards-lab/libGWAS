@@ -1,112 +1,112 @@
-pygwas package
+libGWAS package
 ++++++++++++++
 
-PyGWAS provides a singular interface for using several GWAS data formats such
+libGWAS provides a singular interface for using several GWAS data formats such
 as Pedigree (ped), Translated Pedigree (tped), Binary Pedigree (bed) and two
 common imputed formats, IMPUTE and MACH as well as each of the accompanying
 files such as marker or family data. Support for plink style phenotype and
 covariate formatted files are also provided.
 
-pygwas.bed_parser module
+libgwas.bed_parser module
 ------------------------
 
-.. automodule:: pygwas.bed_parser
+.. automodule:: libgwas.bed_parser
     :members:
     :undoc-members:
     :show-inheritance:
 
-pygwas.boundary module
+libgwas.boundary module
 ----------------------
 
-.. automodule:: pygwas.boundary
+.. automodule:: libgwas.boundary
     :members:
     :undoc-members:
     :show-inheritance:
 
-pygwas.data_parser module
+libgwas.data_parser module
 -------------------------
 
-.. automodule:: pygwas.data_parser
+.. automodule:: libgwas.data_parser
     :members:
     :undoc-members:
     :show-inheritance:
 
-pygwas.exceptions module
+libgwas.exceptions module
 ------------------------
 
-.. automodule:: pygwas.exceptions
+.. automodule:: libgwas.exceptions
     :members:
     :undoc-members:
     :show-inheritance:
 
-pygwas.impute_parser module
+libgwas.impute_parser module
 ---------------------------
 
-.. automodule:: pygwas.impute_parser
+.. automodule:: libgwas.impute_parser
     :members:
     :undoc-members:
     :show-inheritance:
 
-pygwas.locus module
+libgwas.locus module
 -------------------
 
-.. automodule:: pygwas.locus
+.. automodule:: libgwas.locus
     :members:
     :undoc-members:
     :show-inheritance:
 
-pygwas.mach_parser module
+libgwas.mach_parser module
 -------------------------
 
-.. automodule:: pygwas.mach_parser
+.. automodule:: libgwas.mach_parser
     :members:
     :undoc-members:
     :show-inheritance:
 
-pygwas.parsed_locus module
+libgwas.parsed_locus module
 --------------------------
 
-.. automodule:: pygwas.parsed_locus
+.. automodule:: libgwas.parsed_locus
     :members:
     :undoc-members:
     :show-inheritance:
 
-pygwas.pedigree_parser module
+libgwas.pedigree_parser module
 -----------------------------
 
-.. automodule:: pygwas.pedigree_parser
+.. automodule:: libgwas.pedigree_parser
     :members:
     :undoc-members:
     :show-inheritance:
 
-pygwas.pheno_covar module
+libgwas.pheno_covar module
 -------------------------
 
-.. automodule:: pygwas.pheno_covar
+.. automodule:: libgwas.pheno_covar
     :members:
     :undoc-members:
     :show-inheritance:
 
-pygwas.snp_boundary_check module
+libgwas.snp_boundary_check module
 --------------------------------
 
-.. automodule:: pygwas.snp_boundary_check
+.. automodule:: libgwas.snp_boundary_check
     :members:
     :undoc-members:
     :show-inheritance:
 
-pygwas.standardizer module
+libgwas.standardizer module
 --------------------------
 
-.. automodule:: pygwas.standardizer
+.. automodule:: libgwas.standardizer
     :members:
     :undoc-members:
     :show-inheritance:
 
-pygwas.transposed_pedigree_parser module
+libgwas.transposed_pedigree_parser module
 ----------------------------------------
 
-.. automodule:: pygwas.transposed_pedigree_parser
+.. automodule:: libgwas.transposed_pedigree_parser
     :members:
     :undoc-members:
     :show-inheritance:
@@ -115,7 +115,7 @@ pygwas.transposed_pedigree_parser module
 Module contents
 ---------------
 
-.. automodule:: pygwas
+.. automodule:: libgwas
     :members:
     :undoc-members:
     :show-inheritance:

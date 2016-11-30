@@ -12,7 +12,5 @@ MVTest - GWAS Analysis
    :maxdepth: 3
 
    installation
-   mvtest
-   mvmany
    modules
    changes

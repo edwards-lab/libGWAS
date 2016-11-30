@@ -6,8 +6,8 @@ if "DEBUG" in sys.argv:
     sys.path.insert(0, "../")
     sys.path.insert(0, ".")
     sys.argv.remove("DEBUG")
-from pygwas.boundary import BoundaryCheck
-from pygwas.snp_boundary_check import SnpBoundaryCheck
+from libgwas.boundary import BoundaryCheck
+from libgwas.snp_boundary_check import SnpBoundaryCheck
 import unittest
 
 

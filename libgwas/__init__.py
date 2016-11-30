@@ -8,14 +8,14 @@ import exceptions
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
-#     This file is part of pyGWAS.
+#     This file is part of libGWAS.
 #
-#     pyGWAS is free software: you can redistribute it and/or modify
+#     libGWAS is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
 #     the Free Software Foundation, either version 3 of the License, or
 #     (at your option) any later version.
 #
-#     pyGWAS is distributed in the hope that it will be useful,
+#     libGWAS is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #     GNU General Public License for more details.
@@ -24,7 +24,7 @@ __license__ = "GPL3.0"
 #     along with MVtest.  If not, see <http://www.gnu.org/licenses/>.
 
 
-"""PYthon GWAS (pygwas) library
+"""GWAS Library (libGWAS) - Genome Wide Association Library for Python
 
 This library contains all of the classes required to parse standard and
 transposed pedigree data using most of PLINK style enhancements (such as

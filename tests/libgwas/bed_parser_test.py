@@ -6,11 +6,11 @@ if "DEBUG" in sys.argv:
     sys.path.insert(0, "../")
     sys.path.insert(0, ".")
     sys.argv.remove("DEBUG")
-from pygwas import bed_parser
-from pygwas.boundary import BoundaryCheck
-from pygwas.snp_boundary_check import SnpBoundaryCheck
-from pygwas.data_parser import DataParser
-from pygwas.pheno_covar import PhenoCovar
+from libgwas import bed_parser
+from libgwas.boundary import BoundaryCheck
+from libgwas.snp_boundary_check import SnpBoundaryCheck
+from libgwas.data_parser import DataParser
+from libgwas.pheno_covar import PhenoCovar
 
 import unittest
 
@@ -19,9 +19,9 @@ from pkg_resources import resource_filename
 class TestBase(unittest.TestCase):
     def setUp(self):
         self.missing = "bedfiles/ped_missing"
-        self.missing_bed = resource_filename("tests.pygwas", "%s.bed" % (self.missing))
-        self.missing_bim = resource_filename("tests.pygwas", "%s.bim" % (self.missing))
-        self.missing_fam = resource_filename("tests.pygwas", "%s.fam" % (self.missing))
+        self.missing_bed = resource_filename("tests.libgwas", "%s.bed" % (self.missing))
+        self.missing_bim = resource_filename("tests.libgwas", "%s.bim" % (self.missing))
+        self.missing_fam = resource_filename("tests.libgwas", "%s.fam" % (self.missing))
         self.genotypes = [
             [2, 1, 2, 2, 1, 2, 2, 1, 2, 2, 1, 2],
             [1, 1, 2, 2, 2, 1, 1, 1, 2, 2, 2, 1],
@@ -41,9 +41,9 @@ class TestBase(unittest.TestCase):
             [0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0]
         ]
         self.nonmissing = "bedfiles/ped_nomiss"
-        self.nonmissing_bed = resource_filename("tests.pygwas", "%s.bed" % (self.nonmissing))
-        self.nonmissing_bim = resource_filename("tests.pygwas", "%s.bim" % (self.nonmissing))
-        self.nonmissing_fam = resource_filename("tests.pygwas", "%s.fam" % (self.nonmissing))
+        self.nonmissing_bed = resource_filename("tests.libgwas", "%s.bed" % (self.nonmissing))
+        self.nonmissing_bim = resource_filename("tests.libgwas", "%s.bim" % (self.nonmissing))
+        self.nonmissing_fam = resource_filename("tests.libgwas", "%s.fam" % (self.nonmissing))
         self.genotypes_w_missing = [
             [2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1],
             [1, 1, 2, 2, 2, 1, 1, 1, 2, 2, 2, 1],

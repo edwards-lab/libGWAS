@@ -15,22 +15,20 @@ def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
-setuptools.setup(name="mvtest",
+setuptools.setup(name="libgwas",
     version=mvtest.__version__,
     author="Eric Torstenson",
     author_email="eric.s.torstenson@vanderbilt.edu",
-    url="https://github.com/edwards-lab/MVtest",
-    download_url="https://github.com/edwards-lab/MVtest/archive/v1.0.3.tar.gz",
-    packages=["meanvar","pygwas","tests/meanvar", "tests/pygwas"],
+    url="https://github.com/edwards-lab/libGWAS",
+    download_url="https://github.com/edwards-lab/libGWAS/archive/v1.0.0.tar.gz",
+    packages=["libgwas", "tests/libgwas"],
     license="GPL",
-    scripts=["mvtest.py", "scripts/mvmany.py"],
-    description=["GWAS analysis"],
+    description=["GWAS Parser Library"],
     install_requires=["scipy","numpy"],
     long_description=read('README'),
     keywords=["GWAS","genetic analysis"],
     test_suite='tests',
-    package_data={'tests/meanvar/bedfiles/':['*'],
-                  'tests/pygwas/bedfiles/':['*'],
+    package_data={'tests/libgwas/bedfiles/':['*'],
                   'doc':['*']},
     classifiers=[
         "Development Status :: 4 - Beta",

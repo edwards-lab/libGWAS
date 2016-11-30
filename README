@@ -873,14 +873,5 @@ completed execution.
 Changelog
 =========
 
-mvtest.py: 1.0.4
-	* Fixed a bug associated with running more than one phenotype at once.
-mvtest.py: 1.0.3
-    * Removed special requirements for MACH input (chr:pos) and made that optional.
-mvtest.py: 1.0.2
-	* added an exception when using improperly formatted MACH info file(s)
-	* updated documentation to draw attention to the additional MACH info file requirements
-mvtest.py: 1.0.1 released
-	* changes to the setup.cfg and setup.py to accomodate changes made to work with gh-pages.
-
-mvtest.py: 1.0.0 released
+libGWAS.py: 1.0.0 released
+	* Migrated library out from MVtest in preparation for release of new analysis program

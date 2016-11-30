@@ -24,7 +24,7 @@ I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 all:
 	make latexpdf
 	mkdir -p ../../doc
-	cp _build/latex/MVtestAPI.pdf ../../doc
+	cp _build/latex/libGWAS-API.pdf ../../doc
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"

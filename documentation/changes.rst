@@ -5,7 +5,7 @@
 Development Notes
 =================
 
-MVtest authors
+libGWAS authors
 ++++++++++++++
 
 .. include:: ../../AUTHORS

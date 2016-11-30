@@ -53,7 +53,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'MVtestAPI'
+project = u'libGWAS-API'
 copyright = u'2015, Todd Edwards, Chun Li and Eric Torstenson'
 author = u'Todd Edwards, Chun Li and Eric Torstenson'
 
@@ -207,7 +207,7 @@ html_static_path = ['_static']
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'MVtestAPI_doc'
+htmlhelp_basename = 'libGWAS-API_doc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -251,7 +251,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'MVtestAPI.tex', u'MVtest API Documentation',
+  (master_doc, 'libGWAS-API.tex', u'MVtest API Documentation',
    author, 'manual'),
 ]
 
