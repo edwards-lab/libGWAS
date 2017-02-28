@@ -82,6 +82,10 @@ class Parser(DataParser):
     #: The threshold associated with the .info info column
     info_threshold = 0.4
 
+    def getnew(self):
+        return Parser(self.fam_details, self.archives, self.chroms, self.info_files)
+
+
     def __init__(self, fam_details, archive_list, chroms, info_files=[]):
         """Initialize the structure with the family details file and the list of archives to be parsed
 
@@ -101,6 +105,8 @@ class Parser(DataParser):
             ExitIf("Info file not found, %s" % (file), not os.path.exists(file))
             ExitIf("Info filename can't be same as sample filename, %s == %s" % (file, archive_list[idx]), file==archive_list[idx])
             idx += 1
+
+        self.parser_name = fam_details
 
         #: single file containing the subject details (similar to plink's .fam)
         self.fam_details = fam_details

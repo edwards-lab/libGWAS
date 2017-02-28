@@ -75,6 +75,10 @@ class Parser(DataParser):
     # Use Todd's chr:pos encoding:rsid optionally
     chrpos_encoding = False
 
+    def getnew(self):
+        return Parser(self.archives, self.info_files)
+
+
     def __init__(self, archive_list, info_files=[]):
         """Initialize the structure with the family details file and the list \
            of archives to be parsed
@@ -103,6 +107,7 @@ class Parser(DataParser):
             if Parser.info_ext[-3:] == ".gz":
                 Parser.info_ext = Parser.info_ext[0:-3]
 
+        self.parser_name = archive_list[0]
         for file in archive_list:
             if self.name is not None:
                 self.name = file.split("/")[-1].split(".")[0]
