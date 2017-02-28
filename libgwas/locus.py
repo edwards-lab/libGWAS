@@ -53,7 +53,7 @@ class Locus(object):
             self.maj_allele_count = -1
             self.missing_allele_count = -1
             self.cur_idx = -1
-
+        self.genotype_data = None
     def flip(self):
         """This will switch major/minor around, regardless of frequency truth.
 
@@ -141,10 +141,18 @@ class Locus(object):
         return self.chr.__cmp__(other.chr)
 
     def __str__(self):
-        return "%d\t%d:%d %s %s %s %0.4f %0.4f" % (self.cur_idx, self.chr,
+        if self.genotype_data:
+            return "%d\t%d:%d %s %s %s %0.4f %0.4f %s" % (self.cur_idx, self.chr,
                                                           self.pos, self.rsid,
                                                           self.major_allele,
                                                           self.minor_allele,
                                                           self.maf,
                                                           self.hetero_freq,
 -                                                         self.genotype_data)
+        else:
+            return "%d\t%d:%d %s %s %s %0.4f %0.4f" % (self.cur_idx, self.chr,
+                                                          self.pos, self.rsid,
+                                                          self.major_allele,
+                                                          self.minor_allele,
+                                                          self.maf,
+                                                          self.hetero_freq)

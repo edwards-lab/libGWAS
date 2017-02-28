@@ -70,6 +70,11 @@ class Parser(DataParser):
 
         #: Name used for reporting information about this dataset
         self.name = datasource.split("/")[-1].split(".")[0]
+        self.parser_name = self.name
+
+    def getnew(self):
+        return Parser(self.mapfile, self.datasource)
+
 
     def ReportConfiguration(self, file):
         """ Report configuration for logging purposes.

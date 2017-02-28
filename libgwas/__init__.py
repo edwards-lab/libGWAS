@@ -1,6 +1,6 @@
 
 __author__ = 'Eric Torstenson'
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 import subprocess
 import sys
@@ -22,7 +22,6 @@ __license__ = "GPL3.0"
 #
 #     You should have received a copy of the GNU General Public License
 #     along with MVtest.  If not, see <http://www.gnu.org/licenses/>.
-
 
 """GWAS Library (libGWAS) - Genome Wide Association Library for Python
 
