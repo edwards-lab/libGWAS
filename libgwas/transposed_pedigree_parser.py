@@ -39,9 +39,22 @@ class Parser(DataParser):
         self.families = []
         self.genotype_file = tped
         self.alleles = []
+        self.ind_count = -1
 
         #: Name used for reporting information about this dataset
         self.name = tped.split("/")[-1].split(".")[0]
+
+        self.parser_name = self.name
+
+    def initialize(self, map3=None, pheno_covar=None):
+        # Required for some parser types
+
+        self.load_tfam(pheno_covar)
+        self.load_genotypes()
+
+    def getnew(self):
+        return Parser(self.tfam_file, self.tped_file)
+
 
     def ReportConfiguration(self, file):
         print >> file, BuildReportLine("TPED FILE", self.tped_file)
@@ -73,7 +86,8 @@ class Parser(DataParser):
                         sex = int(words[sex_col])
                     if DataParser.has_pheno:
                         pheno = float(words[pheno_col])
-                    pheno_covar.add_subject(indid, sex, pheno)
+                    if pheno_covar is not None:
+                        pheno_covar.add_subject(indid, sex, pheno)
                     if len(words) > 0:
                         self.families.append(words)
                 else:
@@ -83,7 +97,10 @@ class Parser(DataParser):
         self.ind_mask[0:, 0] = mask_components
         self.ind_mask[0:, 1] = mask_components
         self.ind_count = self.ind_mask.shape[0]
-        pheno_covar.freeze_subjects()
+
+        if pheno_covar is not None:
+            pheno_covar.freeze_subjects()
+        self.load_genotypes()
 
     def load_genotypes(self):
         """This really just intializes the file by opening it up. """
