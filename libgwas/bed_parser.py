@@ -92,6 +92,11 @@ class Parser(transposed_pedigree_parser.Parser):
                 1:DataParser.missing_storage
         }
 
+        self.parser_name = bed
+
+    def getnew(self):
+        return Parser(self.fam_file, self.bim_file, self.bed_file)
+
     def initialize(self, map3=False, pheno_covar=None):
         self.load_bim(map3)
         self.load_fam(pheno_covar)
@@ -261,7 +266,6 @@ class Parser(transposed_pedigree_parser.Parser):
 
             if DataParser.boundary.TestBoundary(chr, pos, rsid):
                 if last_chr != chr:
-                    print "." ,
                     sys.stdout.flush()
                     last_chr = chr
                 genotypes = numpy.array(self.extract_genotypes(buffer),
@@ -272,7 +276,6 @@ class Parser(transposed_pedigree_parser.Parser):
                     missing = numpy.zeros(genotypes.shape[0], dtype='int8')
                 missing +=  0+(genotypes==DataParser.missing_storage)
 
-        print ""
         max_missing = DataParser.ind_miss_tol * locus_count
         dropped_individuals = 0+(max_missing<missing)
 
@@ -300,7 +303,6 @@ class Parser(transposed_pedigree_parser.Parser):
             rsid = self.rsids[index]
             if DataParser.boundary.TestBoundary(chr, pos, rsid):
                 if last_chr != chr:
-                    print "." % (chr),
                     sys.stdout.flush()
                     last_chr = chr
                 missing = numpy.sum(0+(genotypes==DataParser.missing_storage))
@@ -309,7 +311,6 @@ class Parser(transposed_pedigree_parser.Parser):
                     dropped_snps.append(rsid)
                 else:
                     self.locus_count += 1
-        print ""
 
     def load_genotypes(self):
         """Prepares the file for genotype parsing.
