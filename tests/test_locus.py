@@ -72,3 +72,27 @@ class TestLocusBasics(test_transped_parser.TestBase):
         self.assertTrue(l4 in d)
         self.assertTrue(d[l4] == "One")
 
+    def testAlleleFreqs(self):
+        l1 = Locus()
+        l1.chr = 1
+        l1.pos = 100
+        l1.min_allele_count = 12
+        l1.maj_allele_count = 88
+        l1.hetero_count = 23
+        l1.alleles = ['A','C']
+        self.assertEqual(50, l1.sample_size)
+        self.assertAlmostEqual(0.12, l1.q)
+        self.assertAlmostEqual(0.88, l1.p)
+        self.assertAlmostEqual(0.2112, l1.exp_hetero_freq)
+        self.assertEqual(100, l1.total_allele_count)
+        self.assertEqual(0.46, l1.hetero_freq)
+        self.assertEqual('A',l1.major_allele)
+        self.assertEqual('C', l1.minor_allele)
+        l1.flip()
+        self.assertAlmostEqual(0.88, l1.q)
+        self.assertAlmostEqual(0.12, l1.p)
+        self.assertAlmostEqual(0.2112, l1.exp_hetero_freq)
+        self.assertEqual(100, l1.total_allele_count)
+        self.assertEqual(0.46, l1.hetero_freq)
+        self.assertEqual('C', l1.major_allele)
+        self.assertEqual('A', l1.minor_allele)

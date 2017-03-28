@@ -75,6 +75,10 @@ class Parser(DataParser):
     def getnew(self):
         return Parser(self.mapfile, self.datasource)
 
+    def initialize(self, map3=False, pheno_covar=None):
+        self.load_mapfile(map3=map3)
+        self.load_genotypes(pheno_covar)
+
 
     def ReportConfiguration(self, file):
         """ Report configuration for logging purposes.
@@ -215,7 +219,8 @@ class Parser(DataParser):
                             phenotype = float(raw_data[pheno_col])
                         if DataParser.has_sex:
                             sex = int(raw_data[sex_col])
-                        pheno_covar.add_subject(indid, sex, phenotype)
+                        if pheno_covar is not None:
+                            pheno_covar.add_subject(indid, sex, phenotype)
                         individual_mask += [0, 0]
                         self.individual_mask.append(0)
                         allelic_data[valid_allele_count] = alleles

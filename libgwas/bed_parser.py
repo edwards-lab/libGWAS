@@ -361,6 +361,7 @@ class Parser(transposed_pedigree_parser.Parser):
                 iteration.allele_count2 = allele_count2
                 iteration.genotype_data = genotypes
                 maf = iteration.maf
+                iteration.hetero_count = hz_count
                 return maf >= DataParser.min_maf and \
                        maf <= DataParser.max_maf
         else:
