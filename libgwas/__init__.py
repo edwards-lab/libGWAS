@@ -48,6 +48,46 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 
+class GenotypeData(object):
+    """Simple data structure to help build vectors of genotypes and then determine
+       which allele is minor/major, effect, etc. """
+    conversion = {
+        "0/0": 0,
+        "0/1": 1,
+        "1/0": 1,
+        "1/1": 2
+    }
+    def __init__(self):
+        self.genotypes = []
+        self.ref_counts = 0
+        self.alt_counts = 0
+        self.het_counts = 0
+        self.missing = 0
+
+    def append(self, gt):
+        gt = GenotypeData.conversion[gt]
+        if gt >= 0:
+            self.ref_counts = 2-gt
+            self.alt_counts = gt
+            if gt == 1:
+                self.het_counts += 1
+        else:
+            self.missing += 2
+        self.genotypes.append(gt)
+
+    def maf(self):
+        if self.alt_counts > self.ref_counts:
+            return self.ref_counts / (self.alt_counts + self.ref_counts)
+        return self.alt_counts / (self.alt_counts + self.ref_counts)
+
+    def freq1(self):
+        return self.ref_counts / (self.ref_counts + self.alt_counts)
+
+    def freq2(self):
+        return self.alt_counts / (self.ref_counts + self.alt_counts)
+
+
+
 def sys_call(cmd):
     """Execute cmd and capture stdout and stderr
 
