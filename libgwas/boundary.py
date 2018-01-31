@@ -64,7 +64,7 @@ class BoundaryCheck(object):
 
         #: Indices of loci that are to be dropped
         #: {chr=>[pos1, pos2, ..., posN]}
-        self.dropped_snps   = collections.defaultdict(set)
+        self.dropped_snps = collections.defaultdict(set)
 
         #: Actual boundary details in BP
         self.bounds = []
@@ -72,14 +72,16 @@ class BoundaryCheck(object):
         #: True if boundary conditions remain true
         self.valid = True
 
-        if bp[0] != None and bp[0] + bp[1] > 0:
-            self.bounds = bp
-        elif kb[0] != None and kb[0] + kb[1] > 0:
-            self.bounds = [1000*i for i in kb]
-        elif mb[0] != None and mb[0] + mb[1] > 0:
-            self.bounds = [1000000*i for i in mb]
-        else:
-            self.valid = False
+        # Users can define an boundary that has no tangible limits
+        if bp[0] is not None or kb[0] is not None or mb[0] is not None:
+            if bp[0] != None and bp[0] + bp[1] > 0:
+                self.bounds = bp
+            elif kb[0] != None and kb[0] + kb[1] > 0:
+                self.bounds = [1000*i for i in kb]
+            elif mb[0] != None and mb[0] + mb[1] > 0:
+                self.bounds = [1000000*i for i in mb]
+            else:
+                self.valid = False
 
         if len(self.bounds) > 0:
             if BoundaryCheck.chrom == -1:

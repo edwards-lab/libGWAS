@@ -27,7 +27,7 @@ class TestBoundaryInitialization(TestBase):
         # This is just for simplifying command line parsing
         BoundaryCheck.chrom = -1
         b = BoundaryCheck()
-        self.assertEqual(False, b.valid)
+        self.assertEqual(True, b.valid)
 
         # At this point, this should any valid chromosome/position combination
         self.assertTrue(b.TestBoundary(1, 100, ""))
