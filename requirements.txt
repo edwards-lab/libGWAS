@@ -4,5 +4,6 @@
 # be that it will work.
 
 libgwas
+pytabix>=0.0.2
 SciPy>=0.12
 NumPy>=1.7.1
