@@ -214,7 +214,14 @@ class TestIteration(TestBase):
 
         self.assertEqual(0, count)
 
+    def testEmptyInit(self):
+        """Key functionality for things that don't have any data that is loaded with the dataset"""
 
+        pc = PhenoCovar()
+        for i in range(10):
+            pc.add_subject(i+1, None, None)
+
+        self.assertEqual(0, len(pc.phenotype_names))
     def testBasicIteration(self):
         PhenoCovar.sex_as_covariate = True
         pc = PhenoCovar()

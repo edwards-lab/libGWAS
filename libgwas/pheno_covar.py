@@ -56,7 +56,7 @@ class PhenoCovar(object):
         self.covariate_labels = []
         #: List of phenotype names from header, if provided.
         #: If no header is found, the phenotype is simply named Pheno-N
-        self.phenotype_names = ["Pheno-1"]
+        self.phenotype_names = []
         #: Allows you to turn off standardization
         self.do_standardize_variables = False
 
@@ -111,13 +111,15 @@ class PhenoCovar(object):
 
         self.pedigree_data[ind_id] = len(self.phenotype_data[0])
         if phenotype != None:
+            if len(self.phenotype_names) == 0:
+                self.phenotype_names = ["Pheno-1"]
             if type(self.phenotype_data) is list:
                 self.phenotype_data[0].append(phenotype)
             else:
                 self.phenotype_data[-1, len(self.individual_mask)] = phenotype
         self.individual_mask.append(0)
 
-        if PhenoCovar.sex_as_covariate:
+        if PhenoCovar.sex_as_covariate and sex is not None:
             try:
                 self.covariate_data[0].append(float(sex))
             except Exception, e:
