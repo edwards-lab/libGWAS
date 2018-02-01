@@ -222,6 +222,8 @@ class TestIteration(TestBase):
             pc.add_subject(i+1, None, None)
 
         self.assertEqual(0, len(pc.phenotype_names))
+        self.assertEqual(10, len(pc.pedigree_data))
+
     def testBasicIteration(self):
         PhenoCovar.sex_as_covariate = True
         pc = PhenoCovar()
