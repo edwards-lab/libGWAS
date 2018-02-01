@@ -23,15 +23,6 @@ class TestBase(unittest.TestCase):
         self.missing_bim = resource_filename("tests", "%s.bim" % (self.missing))
         self.missing_fam = resource_filename("tests", "%s.fam" % (self.missing))
         self.genotypes = [
-            [2, 1, 2, 2, 1, 2, 2, 1, 2, 2, 1, 2],
-            [1, 1, 2, 2, 2, 1, 1, 1, 2, 2, 2, 1],
-            [2, 0, 1, 1, 2, 2, 2, 0, 1, 1, 2, 2],
-            [2, 1, 0, 1, 1, 2, 2, 1, 0, 1, 1, 2],
-            [1, 0, 2, 1, 2, 2, 1, 0, 2, 1, 2, 2],
-            [1, 2, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2],
-            [2, 1, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2]
-        ]
-        self.genotypes = [
             [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0],
             [1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
             [0, 2, 1, 1, 0, 0, 0, 2, 1, 1, 0, 0],
@@ -44,15 +35,6 @@ class TestBase(unittest.TestCase):
         self.nonmissing_bed = resource_filename("tests", "%s.bed" % (self.nonmissing))
         self.nonmissing_bim = resource_filename("tests", "%s.bim" % (self.nonmissing))
         self.nonmissing_fam = resource_filename("tests", "%s.fam" % (self.nonmissing))
-        self.genotypes_w_missing = [
-            [2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1],
-            [1, 1, 2, 2, 2, 1, 1, 1, 2, 2, 2, 1],
-            [2, -1, 1, 1, 2, 2, 2, 0, 1, 1, 2, 2],
-            [2, -1, 0, 1, 1, 2, 2, 1, 0, 1, 1, 2],
-            [1, -1, 2, 1, 2, 2, 1, 0, 2, 1, 2, 2],
-            [1, -1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2],
-            [2, -1, 1, 2, 2, 2, 2, 1, 1, 2, 2, 2]
-        ]
 
         self.genotypes_w_missing = [
             [0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1],
