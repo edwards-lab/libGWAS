@@ -4,6 +4,7 @@ __version__ = '1.0.2'
 
 import subprocess
 import sys
+import numpy
 import exceptions
 
 __copyright__ = "Eric Torstenson"
@@ -86,7 +87,11 @@ class GenotypeData(object):
     def freq2(self):
         return self.alt_counts / (self.ref_counts + self.alt_counts)
 
+    def gt(self):
+        return numpy.array(self.genotypes)
 
+    def __str__(self):
+        return "%d\t%d\t%d\t%s" % (self.ref_counts, self.alt_counts, self.het_counts, " ".join([str(x) for x in self.genotypes]))
 
 def sys_call(cmd):
     """Execute cmd and capture stdout and stderr
