@@ -193,5 +193,36 @@ class TestVcfFiles(TestBase):
             index += 1
         self.assertEqual(7, index)
 
+    # Test to make sure we can load everything
+    def testMissingMxBothComplete(self):
+        pc = PhenoCovar()
+        DataParser.snp_miss_tol = 0.5       # We should only lose 1
+        DataParser.ind_miss_tol = 0.5       # We should only lose 1
+        parser = Parser(self.missing, data_field='GT')
+        parser.init_subjects(pc)
+        parser.load_genotypes()
+
+        mapdata = self.missing_mapdata
+
+        index = 1
+        genotypes_w_missing = [
+            [0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0],
+            [1,  0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
+            [0,  1, 1, 0, 0, 0, 2, 1, 1, 0, 0],
+            [0,  2, 1, 1, 0, 0, 1, 2, 1, 1, 0],
+            [1,  0, 1, 0, 0, 1, 2, 0, 1, 0, 0],
+            [1,  1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0,  1, 0, 0, 0, 0, 1, 1, 0, 0, 0]
+
+        ]
+        for snp in parser:
+            self.assertEqual(int(mapdata[index][0]), snp.chr)
+            self.assertEqual(int(mapdata[index][1]), snp.pos)
+            self.assertEqual(mapdata[index][2], snp.rsid)
+            self.assertEqual(genotypes_w_missing[index],
+                             list(snp.genotype_data))
+            index += 1
+        self.assertEqual(7, index)
+
 if __name__ == "__main__":
     unittest.main()
