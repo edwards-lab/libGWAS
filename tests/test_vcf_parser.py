@@ -284,5 +284,26 @@ class TestVcfFiles(TestBase):
             index += 1
         self.assertEqual(6, index)
 
+    def testRegionBoundaryWithExclusions(self):
+        pc = PhenoCovar()
+        DataParser.boundary = SnpBoundaryCheck(snps=["rs0005-rs0007"])
+        DataParser.boundary.LoadExclusions(snps=["rs0007"])
+        BoundaryCheck.chrom = 2
+        parser = Parser(self.nonmissing, data_field='GT')
+        parser.init_subjects(pc)
+        parser.load_genotypes()
+
+
+        index = 4
+        self.assertEqual(2, parser.locus_count)
+        for snp in parser:
+            self.assertEqual(int(self.nonmissing_mapdata[index][0]), snp.chr)
+            self.assertEqual(int(self.nonmissing_mapdata[index][1]), snp.pos)
+            self.assertEqual(self.nonmissing_mapdata[index][2], snp.rsid)
+            self.assertEqual(self.genotypes[index], list(snp.genotype_data))
+
+            index += 1
+        self.assertEqual(6, index)
+
 if __name__ == "__main__":
     unittest.main()
