@@ -10,6 +10,7 @@ import os
 import unittest
 import numpy
 from libgwas.pheno_covar import PhenoCovar
+from libgwas.pheno_covar import PhenoIdFormat
 from libgwas.exceptions import MalformedInputFile
 from libgwas.exceptions import InvalidSelection
 from libgwas.exceptions import NoMatchedPhenoCovars
@@ -20,7 +21,7 @@ class TestBase(unittest.TestCase):
     def setUp(self):
         self.pcsac = PhenoCovar.sex_as_covariate
         self.filenames = self.WriteTestFiles()
-
+        self.id_encoding = PhenoCovar.id_encoding
         self.no_header = open(self.filenames[0])
 
         self.header = open(self.filenames[1])
@@ -53,6 +54,7 @@ class TestBase(unittest.TestCase):
         DataParser.has_pheno = self.has_pheno
         libgwas.standardizer.set_standardizer(self.standardizer)
 
+        PhenoCovar.id_encoding = self.id_encoding
     def WriteTestFiles(self, prefix = "__test_pheno"):
         filenames = []
         filename = "%s_sc.txt" % (prefix)
@@ -61,8 +63,8 @@ class TestBase(unittest.TestCase):
 Fam2\tInd2\t1.0
 Fam3\tInd3\t0.4
 Fam4\tInd4\t0.8
-Fam4\tInd5\t1
-Fam4\tInd6\t0.1""")
+Fam5\tInd5\t1
+Fam6\tInd6\t0.1""")
         f.close()
         filenames.append(filename)
 
@@ -73,8 +75,8 @@ Fam1\tInd1\t0.9
 Fam2\tInd2\t1.0
 Fam3\tInd3\t0.4
 Fam4\tInd4\t0.8
-Fam4\tInd5\t1
-Fam4\tInd6\t0.1""")
+Fam5\tInd5\t1
+Fam6\tInd6\t0.1""")
         f.close()
         filenames.append(filename)
 
@@ -84,8 +86,8 @@ Fam4\tInd6\t0.1""")
 Fam2\tInd2\t1\t0.4
 Fam3\tInd3\t2\t1.0
 Fam4\tInd4\t2\t0.5
-Fam4\tInd5\t1\t0.9
-Fam4\tInd6\t1\t1.0""")
+Fam5\tInd5\t1\t0.9
+Fam6\tInd6\t1\t1.0""")
         f.close()
         filenames.append(filename)
 
@@ -97,8 +99,8 @@ Fam4\tInd6\t1\t1.0""")
 Fam2\tInd2\t0.2\t0.5\t1.0
 Fam3\tInd3\t0.3\t0.6\t0.1
 Fam4\tInd4\t0.4\t0.5\t0.5
-Fam4\tInd5\t0.5\t1.0\t1.0
-Fam4\tInd6\t0.6\t0.1\t0.2""")
+Fam5\tInd5\t0.5\t1.0\t1.0
+Fam6\tInd6\t0.6\t0.1\t0.2""")
         f.close()
         filenames.append(filename)
 
@@ -111,11 +113,10 @@ Fam1\tInd1\t0.1\t1.0\t0.5
 Fam2\tInd2\t0.2\t0.5\t1.0
 Fam3\tInd3\t0.3\t0.6\t0.1
 Fam4\tInd4\t0.4\t0.5\t0.5
-Fam4\tInd5\t0.5\t1.0\t1.0
-Fam4\tInd6\t0.6\t0.1\t0.2""")
+Fam5\tInd5\t0.5\t1.0\t1.0
+Fam6\tInd6\t0.6\t0.1\t0.2""")
         f.close()
         filenames.append(filename)
-
 
 
         # For verification that we handle mismatched IDs
@@ -125,8 +126,8 @@ Fam4\tInd6\t0.6\t0.1\t0.2""")
 Fam2\tInd2\t1\t0.4
 Fam3\tInd3\t2\t1.0
 Fam4\tInd4\t2\t0.5
-Fam4\tInd5\t1\t0.9
-Fam4\tInd6\t1\t1.0
+Fam5\tInd5\t1\t0.9
+Fam6\tInd6\t1\t1.0
 Fam4\tInd7\t2\t-9
 Fam9\tInd1\t1\t0.9""")
         f.close()
@@ -142,8 +143,8 @@ Fam1\tInd1\t0.9
 Fam2\tInd2\t1.0
 Fam3\tInd3\t0.4
 Fam4\tInd4\t0.8
-Fam4\tInd5\t1
-Fam4\tInd6\t0.1""")
+Fam5\tInd5\t1
+Fam6\tInd6\t0.1""")
         f.close()
         filenames.append(filename)
 
@@ -155,8 +156,8 @@ Fam1\tInd1\t-9\t1.0\t0.5
 Fam2\tInd2\t0.2\t-9\t1.0
 Fam3\tInd3\t0.3\t0.6\t-9
 Fam4\tInd4\t0.4\t0.5\t0.5
-Fam4\tInd5\t0.5\t1.0\t1.0
-Fam4\tInd6\t0.6\t0.1\t0.2""")
+Fam5\tInd5\t0.5\t1.0\t1.0
+Fam6\tInd6\t0.6\t0.1\t0.2""")
         f.close()
         filenames.append(filename)
 
@@ -168,8 +169,8 @@ Fam1\tInd1\t0.1\t1.0\t0.5
 Fam2\tInd2\t0.2\t0.5\t1.0
 Fam3\tInd3\t0.3\t0.6\t0.1
 Fam4\tInd4\t0.4\t0.5\t0.5
-Fam4\tInd5\t0.5\t1.0\t1.0
-Fam4\tInd6\t0.6\t0.1\t0.2""")
+Fam5\tInd5\t0.5\t1.0\t1.0
+Fam6\tInd6\t0.6\t0.1\t0.2""")
         f.close()
         filenames.append(filename)
 
@@ -181,8 +182,8 @@ Fam1\tInd1\t0.9
 Fam2\tInd2\t1.0
 Fam3\tInd3\t0.4
 Fam4\tInd4\t0.8
-Fam4\tInd5\t1
-Fam4\tInd6\t0.1""")
+Fam5\tInd5\t1
+Fam6\tInd6\t0.1""")
         f.close()
         filenames.append(filename)
 
@@ -192,8 +193,10 @@ Fam4\tInd6\t0.1""")
 def load_pedigree(pc, ped):
     for line in ped:
         fam, ind, sex, ph = line.split()
-        pc.add_subject("%s:%s" % (fam, ind), sex=int(sex), phenotype=float(ph))
+        pc.add_subject(PhenoCovar.build_id([fam,ind,sex,ph]), sex=int(sex), phenotype=float(ph))
     pc.freeze_subjects()
+
+
 class TestIteration(TestBase):
     def setUp(self):
         super(TestIteration, self).setUp()
@@ -223,6 +226,33 @@ class TestIteration(TestBase):
 
         self.assertEqual(0, len(pc.phenotype_names))
         self.assertEqual(10, len(pc.pedigree_data))
+
+    def testIndIdsDefault(self):
+        pc = PhenoCovar()
+        load_pedigree(pc, self.ped)
+
+        ids = sorted("Fam1:Ind1,Fam2:Ind2,Fam3:Ind3,Fam4:Ind4,Fam5:Ind5,Fam6:Ind6,Fam4:Ind7,Fam9:Ind1".split(","))
+        self.assertEqual(ids, sorted(pc.pedigree_data.keys()))
+
+    def testIndIdsIID(self):
+        PhenoCovar.id_encoding = PhenoIdFormat.IID
+
+        ped = [l.strip() for l in open(self.filenames[2]).readlines()]
+        pc = PhenoCovar()
+        load_pedigree(pc, ped)
+
+        ids = "Ind1,Ind2,Ind3,Ind4,Ind5,Ind6".split(",")
+        self.assertEqual(ids, sorted(pc.pedigree_data.keys()))
+
+
+    def testIndIdsFID(self):
+        PhenoCovar.id_encoding = PhenoIdFormat.FID
+        ped = [l.strip() for l in open(self.filenames[2]).readlines()]
+        pc = PhenoCovar()
+        load_pedigree(pc, ped)
+
+        ids = "Fam1,Fam2,Fam3,Fam4,Fam5,Fam6".split(",")
+        self.assertEqual(ids, sorted(pc.pedigree_data.keys()))
 
     def testBasicIteration(self):
         PhenoCovar.sex_as_covariate = True
@@ -348,7 +378,6 @@ class TestMismatchedIDs(TestBase):
     def testCovarHeader(self):
         # Indicate that we want to use sex as a covariate
         PhenoCovar.sex_as_covariate = True
-
         pc = PhenoCovar()
         load_pedigree(pc, self.ped)
         self.assertEqual(1, len(pc.phenotype_data))

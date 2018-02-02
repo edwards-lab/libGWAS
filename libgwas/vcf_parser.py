@@ -152,8 +152,8 @@ class Parser(DataParser):
         with OpenFile(self.vcf_filename, self.compressed) as file:
             for line in file:
                 if line[0:6] == "#CHROM":
-                    line = line.split()
-                    sample_ids = set(line[9:])
+                    line = line.strip().split()
+                    sample_ids = line[9:]
                     break
 
         mask_components = []
@@ -189,7 +189,9 @@ class Parser(DataParser):
             if skip_all_headers:
                 for line in self.vcf_file:
                     if line[0:2] == "#C":
-                        break 
+                        break
+
+
 
     def load_genotypes(self):
         self.reset()

@@ -2,6 +2,7 @@ from . import ExitIf
 from . import BuildReportLine
 from data_parser import DataParser
 from parsed_locus import ParsedLocus
+from pheno_covar import PhenoCovar
 from exceptions import TooManyAlleles
 from exceptions import TooFewAlleles
 import gzip
@@ -160,7 +161,7 @@ class Parser(DataParser):
         mask_components = []        # 1s indicate an individual is to be masked out
         for line in file:
             words = line.strip().split()
-            indid = ":".join(words[0:2])
+            indid = PhenoCovar.build_id(words)
             if DataParser.valid_indid(indid):
                 mask_components.append(0)
                 sex = int(words[5])

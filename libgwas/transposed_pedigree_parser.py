@@ -4,6 +4,7 @@ from exceptions import TooManyAlleles
 from exceptions import TooFewAlleles
 import gzip
 import numpy
+from pheno_covar import PhenoCovar
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -76,7 +77,7 @@ class Parser(DataParser):
         for line in open(self.tfam_file):
             words = line.strip().split()
             if len(words) > 1:
-                indid = ":".join(words[0:2])
+                indid = PhenoCovar.build_id(words)
                 if DataParser.valid_indid(indid):
                     mask_components.append(0)
 

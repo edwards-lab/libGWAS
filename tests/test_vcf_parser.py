@@ -11,6 +11,7 @@ import unittest
 import os
 from libgwas.data_parser import DataParser
 from libgwas.pheno_covar import PhenoCovar
+from libgwas.pheno_covar import PhenoIdFormat
 from libgwas.vcf_parser import Parser
 from libgwas.boundary import BoundaryCheck
 from libgwas.snp_boundary_check import SnpBoundaryCheck
@@ -57,6 +58,7 @@ class TestBase(unittest.TestCase):
         self.phenotypes     = [0.1, 0.4, 1.0, 0.5, 0.9, 1.0, 0.1, 0.4, 1.0, 0.5, 0.9, 1.0]
         self.sex            = [1,1,2,2,1,1,1,1,2,2,1,1]
 
+        self.id_encoding    = PhenoCovar.id_encoding
         self.chrom          = BoundaryCheck.chrom
         self.boundary       = DataParser.boundary
         self.min_maf        = DataParser.min_maf
@@ -70,6 +72,10 @@ class TestBase(unittest.TestCase):
         self.has_fid        = DataParser.has_fid
         self.has_liability  = DataParser.has_liability
 
+        # This will have to be set by the application, but in most cases
+        # VCF files will be either IID or FID and we have to know which
+        # to ensure our IDs match between Pheno/Covar and VCF samples
+        PhenoCovar.id_encoding = PhenoIdFormat.IID
         DataParser.boundary = BoundaryCheck()
 
     def tearDown(self):
@@ -86,6 +92,7 @@ class TestBase(unittest.TestCase):
         DataParser.has_fid    = self.has_fid
         DataParser.has_liability = self.has_liability
         DataParser.has_parents = self.has_parents
+        PhenoCovar.id_encoding = self.id_encoding
 
 class TestVcfFiles(TestBase):
     def testNonmissingBasics(self):
@@ -304,6 +311,36 @@ class TestVcfFiles(TestBase):
 
             index += 1
         self.assertEqual(6, index)
+
+    def testCompleteWithIndExclusions(self):
+        DataParser.ind_exclusions = ["1", "3"]
+
+        genotypes = [
+            [1, 0, 1, 0, 0, 1, 0, 0, 1, 0],
+            [1, 0, 0, 1, 1, 1, 0, 0, 0, 1],
+            [2, 1, 0, 0, 0, 2, 1, 1, 0, 0],
+            [1, 1, 1, 0, 0, 1, 2, 1, 1, 0],
+            [2, 1, 0, 0, 1, 2, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0, 1, 1, 0, 0, 0]
+        ]
+
+        pc = PhenoCovar()
+        parser = Parser(self.nonmissing, data_field='GT')
+        parser.init_subjects(pc)
+        parser.load_genotypes()
+
+        mapdata = self.nonmissing_mapdata
+
+        index = 0
+        for snp in parser:
+            self.assertEqual(int(self.nonmissing_mapdata[index][0]), snp.chr)
+            self.assertEqual(int(self.nonmissing_mapdata[index][1]), snp.pos)
+            self.assertEqual(self.nonmissing_mapdata[index][2], snp.rsid)
+            self.assertEqual(genotypes[index], list(snp.genotype_data))
+            index += 1
+        self.assertEqual(7, index)
+
 
 if __name__ == "__main__":
     unittest.main()

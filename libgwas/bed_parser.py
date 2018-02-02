@@ -9,6 +9,7 @@ from . import BuildReportLine
 import sys
 from . import sys_call
 import logging
+from pheno_covar import PhenoCovar
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -135,7 +136,7 @@ class Parser(transposed_pedigree_parser.Parser):
         for line in open(self.fam_file):
             words = line.strip().split()
             if len(words) > 1:
-                indid = ":".join(words[0:2])
+                indid = PhenoCovar.build_id(words)
                 if DataParser.valid_indid(indid):
                     mask_components.append(0)
 

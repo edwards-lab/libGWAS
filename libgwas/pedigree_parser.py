@@ -7,6 +7,7 @@ from exceptions import MalformedInputFile
 from exceptions import TooManyAlleles
 from . import sys_call
 from . import BuildReportLine
+from pheno_covar import PhenoCovar
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"
@@ -198,7 +199,7 @@ class Parser(DataParser):
                         self.snp_mask).compressed().reshape(-1, 2)
 
                 # Convert the alleles into genotypes
-                indid = ":".join(raw_data[0:2])
+                indid = PhenoCovar.build_id(raw_data)
                 if not DataParser.has_fid:
                     indid = raw_data[0]
 

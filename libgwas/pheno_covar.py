@@ -4,6 +4,7 @@ from exceptions import InvalidSelection
 from exceptions import InvariantVar
 from exceptions import NoMatchedPhenoCovars
 from standardizer import get_standardizer
+import enum
 import sys
 
 __copyright__ = "Eric Torstenson"
@@ -23,6 +24,12 @@ __license__ = "GPL3.0"
 #     You should have received a copy of the GNU General Public License
 #     along with MVtest.  If not, see <http://www.gnu.org/licenses/>.
 
+
+class PhenoIdFormat(enum.Enum):
+    IID_FID=1
+    IID=2
+    FID=3
+
 class PhenoCovar(object):
     """Store both phenotype and covariate data in a single object.
 
@@ -30,12 +37,19 @@ class PhenoCovar(object):
     easily. Covariates do not change during iteration. Missing is updated
     according to the missing content within the phenotype (and covariates
     as well).
+
+    We are going to assume PLINK style format even for vcf or other formats
+    which aren't pedigree based, for simplicity. User can specify which column
+    to use if they are using a format like VCF which has no family:individual
+    id combination
     """
 
     #: Do we use sex as a covariate?
     sex_as_covariate = False
     #: Internal encoding for missingness
     missing_encoding = -9
+
+    id_encoding = PhenoIdFormat.IID_FID
 
     # Prime with pedigree data and the --sex == True. This will optionally add/activate the first covariate, SEX
     # Load phenotype data from file. If this happens, we'll overwrite the pedigree based data
@@ -124,6 +138,19 @@ class PhenoCovar(object):
                 self.covariate_data[0].append(float(sex))
             except Exception, e:
                 raise MalformedInputFile("Invalid setting, %s, for sex in pedigree" % (sex))
+        if PhenoCovar.sex_as_covariate and len(self.covariate_data[0]) != len(self.pedigree_data):
+            print >> sys.stderr, "What? "
+            print >> sys.stderr, self.covariate_data
+            print >> sys.stderr, self.pedigree_data
+            sys.exit(1)
+    @classmethod
+    def build_id(cls, row):
+        if cls.id_encoding == PhenoIdFormat.IID:
+            return row[1]
+        if cls.id_encoding == PhenoIdFormat.FID:
+            return row[0]
+        if cls.id_encoding == PhenoIdFormat.IID_FID:
+            return ":".join(row[0:2])
 
     def load_phenofile(self, file, indices=[], names=[], sample_file=False):
         """Load phenotype data from phenotype file
@@ -201,7 +228,7 @@ class PhenoCovar(object):
             for line in file:
                 line_number += 1
                 words   = line.split()
-                iid = ":".join(words[0:2])
+                iid = self.build_id(words)
 
                 # Indexes are 1 based...silly humans
                 if len(valid_indices) > 0 and max(valid_indices) > (len(words)-2):
@@ -300,7 +327,7 @@ class PhenoCovar(object):
             for line in file:
                 line_number += 1
                 words   = line.split()
-                iid = ":".join(words[0:2])
+                iid = self.build_id(words)
 
                 # Indexes are 1 based...silly humans
                 if len(var_indices) > 0 and max(var_indices) > (len(words)):
