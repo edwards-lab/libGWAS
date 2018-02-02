@@ -216,6 +216,7 @@ class Parser(DataParser):
         self.locus_count = 0
         dropped_snps = []
 
+        max_missing = DataParser.snp_miss_tol * float(valid_individuals)
         self.reset()
         for locus in self.vcf_file:
             locus = locus.strip().split()
@@ -250,7 +251,7 @@ class Parser(DataParser):
         iteration.chr = int(iteration.chr)
         iteration.pos = int(iteration.pos)
         alleles = [iteration.ref, iteration.alt]
-        if DataParser.boundary.TestBoundary(chr, iteration.pos, iteration.rsid):
+        if DataParser.boundary.TestBoundary(iteration.chr, iteration.pos, iteration.rsid):
             # Consider qual and filter as well
             if (qual=='.' or qual > Parser.min_qual) and filter in Parser.pass_filters:
                 geno = Parser.ExtractGenotypes(locus, format.split(":"))
