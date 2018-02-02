@@ -211,7 +211,7 @@ class Parser(DataParser):
 
         self.ind_mask = self.ind_mask | dropped_individuals
         valid_individuals = numpy.sum(self.ind_mask==0)
-        
+
         self.locus_count = 0
         dropped_snps = []
 
