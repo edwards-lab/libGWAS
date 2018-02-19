@@ -272,7 +272,7 @@ class TestVcfFiles(TestBase):
             index += 1
         self.assertEqual(3, index)
 
-    def testSnpBoundary2StardMidway(self):
+    def testSnpBoundary2StartMidway(self):
         pc = PhenoCovar()
         DataParser.boundary = SnpBoundaryCheck(snps=["rs0005-rs0006"])
         BoundaryCheck.chrom = 2
@@ -312,6 +312,38 @@ class TestVcfFiles(TestBase):
             index += 1
         self.assertEqual(6, index)
 
+    def testMissingWithExclusions(self):
+        DataParser.ind_exclusions = ["2", "3"]
+
+        genotypes_w_missing = [
+            [0, -1, -1, -1, -1, -1, -1, -1, -1, 1],
+            [1, 0, 0, 1, 1, 1, 0, 0, 0, 1],
+            [0, 1, 0, 0, 0, 2, 1, 1, 0, 0],
+            [0, 1, 1, 0, 0, 1, 2, 1, 1, 0],
+            [1, 1, 0, 0, 1, 2, 0, 1, 0, 0],
+            [1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 1, 0, 0, 0]
+
+        ]
+        pc = PhenoCovar()
+        parser = Parser(self.missing, data_field='GT')
+        parser.init_subjects(pc)
+        parser.load_genotypes()
+
+        mapdata = self.missing_mapdata
+
+
+        self.assertEqual(7, parser.locus_count)
+        index = 0
+        for snp in parser:
+            self.assertEqual(int(self.missing_mapdata[index][0]), snp.chr)
+            self.assertEqual(int(self.missing_mapdata[index][1]), snp.pos)
+            self.assertEqual(self.missing_mapdata[index][2], snp.rsid)
+            self.assertEqual(genotypes_w_missing[index], list(snp.genotype_data))
+
+            index += 1
+        self.assertEqual(7, index)
+
     def testCompleteWithIndExclusions(self):
         DataParser.ind_exclusions = ["1", "3"]
 
@@ -330,8 +362,6 @@ class TestVcfFiles(TestBase):
         parser.init_subjects(pc)
         parser.load_genotypes()
 
-        mapdata = self.nonmissing_mapdata
-
         index = 0
         for snp in parser:
             self.assertEqual(int(self.nonmissing_mapdata[index][0]), snp.chr)
@@ -341,6 +371,35 @@ class TestVcfFiles(TestBase):
             index += 1
         self.assertEqual(7, index)
 
+    def testPedWithMissingMxIndExclusionsToo(self):
+        pc = PhenoCovar()
+        DataParser.ind_exclusions = ["2", "3"]
+        DataParser.ind_miss_tol = 0.5       # We should only lose 1
 
+        pc = PhenoCovar()
+        parser = Parser(self.missing, data_field='GT')
+        parser.init_subjects(pc)
+        parser.load_genotypes()
+
+        mapdata = self.missing_mapdata
+
+        genotypes_w_missing = [
+            [0, -1, -1, -1, -1, -1, -1, -1, -1, 1],
+            [1, 0, 0, 1, 1, 1, 0, 0, 0, 1],
+            [0, 1, 0, 0, 0, 2, 1, 1, 0, 0],
+            [0, 1, 1, 0, 0, 1, 2, 1, 1, 0],
+            [1, 1, 0, 0, 1, 2, 0, 1, 0, 0],
+            [1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 0, 0, 0, 0, 1, 1, 0, 0, 0]
+
+        ]
+        index = 0
+        for snp in parser:
+            self.assertEqual(int(mapdata[index][0]), snp.chr)
+            self.assertEqual(int(mapdata[index][1]), snp.pos)
+            self.assertEqual(mapdata[index][2], snp.rsid)
+            self.assertEqual(genotypes_w_missing[index], list(snp.genotype_data))
+            index += 1
+        self.assertEqual(7, index)
 if __name__ == "__main__":
     unittest.main()
