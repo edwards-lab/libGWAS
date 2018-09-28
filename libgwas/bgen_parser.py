@@ -37,17 +37,25 @@ class Parser(DataParser):
     #: The threshold associated with the .info info column
     info_threshold = 0.4
 
-    def __init__(self, bgen_filename, sample_filename=None):
-        """Normal processing will iterate over every locus in each of the files in archive_list
+    def __init__(self, bgen_filename, sample_filename=None, meta_filename=None):
+        """Support is present only for a single .bgen file (and possibly corresponding sample file)
 
-        Client calls should remove anything from archive list that isn't to be parsed"""
+        If sample file is not present, bgen file should have sample IDs baked into
+        (which is part of the format).
+
+        Currently, support for the metadata doesn't exist, but files are present
+        as placeholders. """
         self.bgen_filename = bgen_filename
         self.sample_filename = sample_filename
+        self.meta_filename = meta_filename
         self.ind_mask = None
         self.ind_count = -1
         self.bgen_idx = -1
         self.bgen = None            # This is the buffer where we'll store the output from the current file
         self.markers_raw = None     # raw marker details in DataFrame format
+        # We don't want to bother checking for this until we know which subjects
+        # to exclude
+        self.max_missing_geno = None
 
         ExitIf("bgen file not found, %s" % (file),
                 not os.path.exists(self.bgen_filename))
@@ -57,8 +65,10 @@ class Parser(DataParser):
 
     def ReportConfiguration(self, file):
         print >> file, BuildReportLine("BGEN FILE", self.bgen_filename)
-        if self.sample_file is not None:
-            print >> file, BuildReportLine("SAMPLE FILE", self.sample_file)
+        if self.sample_filename is not None:
+            print >> file, BuildReportLine("SAMPLE FILE", self.sample_filename)
+        if self.meta_filename is not None:
+            print >> file, BuildReportLine("mETA FILE", self.meta_filename)
 
 
     def load_family_details(self, pheno_covar):
@@ -81,7 +91,7 @@ class Parser(DataParser):
             words = line.strip().split()
             indid = PhenoCovar.build_id(words)
             ExitIf(indid != sample_ids[sample_index],
-                "Sample id order doesn't match: %s != %s at #%s" % (indid, sample_ids[sample_index], sample_index + 1)
+                "Sample id order doesn't match: %s != %s at #%s" % (indid, sample_ids[sample_index], sample_index + 1))
             sample_index += 1
             if DataParser.valid_indid(indid):
                 mask_components.append(0)
@@ -92,38 +102,12 @@ class Parser(DataParser):
         self.ind_count = self.ind_mask.shape[0]
         pheno_covar.freeze_subjects()
 
-    def next_file(self):
-        self.file_index += 1
-        if self.file_index < len(self.archives):
-            self.current_filename = self.archives[self.file_index]
-            self.bgen = read_bgen(self.current_filename)
-
-            """self.bgen now holds a dict with the following keys:
-            
-                    variants => DataFrame with chrom, id, pos, rsid & id
-                    genotypes => array (locus x sample x 3xGenoLikelihood)
-                    samples => Sample IDs 
-                    
-                    self.bgen['genotypes'].compute() will return the array in a 
-                    format that can be processed
-            """
-            self.bgen_idx = 0
-
-            if len(self.ids) > 0:
-                # We don't care if the IDs match, just that the count is the same
-                # If they provide us with mixed up subject IDs, then that's a
-                # problem on their end and verifying order of many files could
-                # result in a waste of precious computation time
-                ExitIf("Inconsistant subject count encountered in file, %s. "% (self.current_filename),
-                       len(self.ids) != len(self.bgen['ids']))
-        else:
-            raise StopIteration
-
     def open_bgen(self):
         self.bgen = bgen_reader.read_bgen(self.bgen_filename,
                                           sample_file=self.sample_filename,
                                           verbose=False)
         self.markers_raw = bgen['variants']
+        self.bgen_idx = 0
 
     def parse_variant(self, index):
         locus = Locus()
@@ -145,13 +129,35 @@ class Parser(DataParser):
         :return: None
         """
         self.open_bgen()
+        missing = None
+        locus_count = 0
+
+        # identify individual's missingness if the threshold is set
+        if DataParser.ind_miss_tol < 1.0:
+            for locus in self:
+                if missing is None:
+                    missing = numpy.zeros(locus.genotype_data.shape[0])
+
+                missing += ((locus.genotype_data == DataParser.missing_representation))
+                locus_count += 1
+
+            max_missing = DataParser.ind_miss_tol * locus_count
+            dropped_individuals = 0+(max_missing < missing)
+            self.ind_mask = self.ind_mask | dropped_individuals
+
+        valid_individuals = numpy.sum(self.ind_mask==0)
+        self.max_missing_geno = DataParser.snp_miss_tol * float(valid_individuals)
+
+
+
 
     def get_next_line(self):
         """If we reach the end of the file, we simply open the next, until we \
         run out of archives to process"""
+        info = 1.0
         locus = self.parse_variant(self.bgen_index)
         self.bgen_idx += 1
-        return locus, 1.0
+        return locus, info
         #return line, info, exp_freq
 
     def populate_iteration(self, iteration):
@@ -174,40 +180,46 @@ class Parser(DataParser):
             iteration.rsid = snpdata.rsid
             if DataParser.boundary.TestBoundary(iteration.chr, iteration.pos, iteration.rsid):
                 genotypes = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute(), self.ind_mask).compressed()
-                estimate = None
-                maf = none
-                if encoding == Encoding.Dominant:
-                    estimate = genotypes[:, 1] + genotypes[:, 2]
-                elif encoding == Encoding.Additive:
-                    estimate = genotypes[:, 1] + 2 * genotypes[:, 2]
-                    maf = estimate
-                elif encoding == Encoding.Recessive:
-                    estimate = genotypes[2]
-                elif encoding == Encoding.Genotype:
-                    estimates = numpy.full_like(genotypes.shape, 2)
-                    estimate[genotypes[:, 1] > genotypes[:, 0] and genotypes[:, 1] > genotypes[:, 2]] = 1
-                    estimate[genotypes[:, 0] > genotypes[:, 1] and genotypes[:, 0] > genotypes[:, 2]] = 0
-                iteration.non_missing_alc = genotypes.shape[0] * 2
-                if maf is None:
-                    maf = genotypes[:, 1] + 2 * genotypes[:, 2]
-                maf = numpy.mean(maf)/2
-                iteration.allele_count2 = maf * (iteration.non_missing_alc * 2)
-                iteration.effa_freq = maf
 
-                if maf > 0.5:
-                    iteration.min_allele_count = iteration.non_missing_alc - iteration.allele_count2
-                    iteration.maj_allele_count = iteration.allele_count2
-                    maf = 1.0 - maf
+                if self.max_missing_geno is None or self.max_missing_geno > numpy.sum(genotypes == DataParser.missing_storage):
+                    estimate = None
+                    maf = none
+                    if encoding == Encoding.Dominant:
+                        estimate = genotypes[:, 1] + genotypes[:, 2]
+                    elif encoding == Encoding.Additive:
+                        estimate = genotypes[:, 1] + 2 * genotypes[:, 2]
+                        maf = estimate
+                    elif encoding == Encoding.Recessive:
+                        estimate = genotypes[2]
+                    elif encoding == Encoding.Genotype:
+                        estimate = numpy.full_like(genotypes.shape, 2)
+                        estimate[genotypes[:, 1] > genotypes[:, 0] and genotypes[:, 1] > genotypes[:, 2]] = 1
+                        estimate[genotypes[:, 0] > genotypes[:, 1] and genotypes[:, 0] > genotypes[:, 2]] = 0
+                    iteration.non_missing_alc = genotypes.shape[0] * 2
+                    if maf is None:
+                        maf = genotypes[:, 1] + 2 * genotypes[:, 2]
+                    maf = numpy.mean(maf)/2
+                    iteration.allele_count2 = maf * (iteration.non_missing_alc * 2)
+                    iteration.effa_freq = maf
+
+                    if maf > 0.5:
+                        iteration.min_allele_count = iteration.non_missing_alc - iteration.allele_count2
+                        iteration.maj_allele_count = iteration.allele_count2
+                        maf = 1.0 - maf
+                    else:
+                        iteration.min_allele_count = iteration.allele_count2
+                        iteration.maj_allele_count = iteration.non_missing_alc - iteration.allele_count2
+
+                    iteration._maf = maf
+                    iteration.genotype_data = numpy.array(estimate)
+
+                    return iteration.maf >= DataParser.min_maf and iteration.maf <= DataParser.max_maf
                 else:
-                    iteration.min_allele_count = iteration.allele_count2
-                    iteration.maj_allele_count = iteration.non_missing_alc - iteration.allele_count2
-
-                iteration._maf = maf
-                iteration.genotype_data = numpy.array(estimate)
-
-                return iteration.maf >= DataParser.min_maf and iteration.maf <= DataParser.max_maf
+                    # Should log why this is ignored
+                    return False
             else:
                 return False
+
         else:
             return False
 
