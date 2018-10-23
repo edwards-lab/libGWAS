@@ -5,13 +5,14 @@ from parsed_locus import ParsedLocus
 from exceptions import TooManyAlleles
 from exceptions import TooFewAlleles
 from bgen_reader import read_bgen
-from exceptions import StopIteration
+# from exceptions import StopIteration
 import numpy
 import os
 from . import ExitIf
 from . import BuildReportLine
 import sys
 import bgen_reader
+import impute_parser
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -30,12 +31,20 @@ __license__ = "GPL3.0"
 #     You should have received a copy of the GNU General Public License
 #     along with MVtest.  If not, see <http://www.gnu.org/licenses/>.
 
+encoding = impute_parser.Encoding.Additive
+
 class Parser(DataParser):
     """Parse bgen formatted data
+
+    ** Note ** qctool and bgen_reader both assume single field IDs. qctool will ignore column 2 when converting
+    gen files, so we'll assume that's the standard format and corresponding applications should default to
+    PhenoCovar.PhenoIdFormat.FID, otherwise, it's likely that the ids from the phenotype parser will not
+    agree with the what's recognized by the bgen file. If there are no sample IDs embedded within the
 
     """
     #: The threshold associated with the .info info column
     info_threshold = 0.4
+
 
     def __init__(self, bgen_filename, sample_filename=None, meta_filename=None):
         """Support is present only for a single .bgen file (and possibly corresponding sample file)
@@ -51,17 +60,21 @@ class Parser(DataParser):
         self.ind_mask = None
         self.ind_count = -1
         self.bgen_idx = -1
+
         self.bgen = None            # This is the buffer where we'll store the output from the current file
         self.markers_raw = None     # raw marker details in DataFrame format
         # We don't want to bother checking for this until we know which subjects
         # to exclude
         self.max_missing_geno = None
+        self.sample_ids = None
 
-        ExitIf("bgen file not found, %s" % (file),
+        ExitIf("bgen file not found, %s" % (self.bgen_filename),
                 not os.path.exists(self.bgen_filename))
         if self.sample_filename is not None:
             ExitIf("Sample file, %s, not found. " % (self.sample_filename),
                    not os.path.exists(self.sample_filename))
+        self.open_bgen()
+
 
     def ReportConfiguration(self, file):
         print >> file, BuildReportLine("BGEN FILE", self.bgen_filename)
@@ -78,26 +91,39 @@ class Parser(DataParser):
         :return: None
         """
 
-        sample_ids = self.bgen['samples']
+        self.sample_ids = list(self.bgen['samples']['id'])
 
-        file = open(self.fam_details)
-        header = file.readline()
-        format = file.readline()        #
-        self.file_index = 0
+        artificial_ids = False
+        if self.sample_ids[0] == "sample_0":
+            artificial_ids = True
+
+        mask_components = [0 for x in self.sample_ids]  # 1s indicate an individual is to be masked out
+        # Sample file is only necessary if the user chose not to include them
+        # in the bgen file. bgen_reader will generate it's own ids if they
+        # don't exist, but we don't care to worry about those.
+        if self.sample_filename is not None:
+            file = open(self.sample_filename)
+            header = file.readline()
+            format = file.readline()        #
+            self.file_index = 0
+
+            sample_index = 0
+
+            for line in file:
+                words = line.strip().split()
+                indid = words[0]
+
+                if artificial_ids or self.sample_ids[sample_index] == indid:
+                    if not DataParser.valid_indid(indid):
+                        mask_components[sample_index] = 1
+                sample_index += 1
 
         sample_index = 0
-        mask_components = []        # 1s indicate an individual is to be masked out
-        for line in file:
-            words = line.strip().split()
-            indid = PhenoCovar.build_id(words)
-            ExitIf(indid != sample_ids[sample_index],
-                "Sample id order doesn't match: %s != %s at #%s" % (indid, sample_ids[sample_index], sample_index + 1))
+        for indid in self.sample_ids:
+            if mask_components[sample_index] == 0:
+                pheno_covar.add_subject(indid, phenotype=pheno_covar.missing_encoding)
             sample_index += 1
-            if DataParser.valid_indid(indid):
-                mask_components.append(0)
-                pheno_covar.add_subject(indid)
-            else:
-                mask_components.append(1)
+
         self.ind_mask = numpy.array(mask_components, dtype=numpy.int8)
         self.ind_count = self.ind_mask.shape[0]
         pheno_covar.freeze_subjects()
@@ -106,7 +132,7 @@ class Parser(DataParser):
         self.bgen = bgen_reader.read_bgen(self.bgen_filename,
                                           sample_file=self.sample_filename,
                                           verbose=False)
-        self.markers_raw = bgen['variants']
+        self.markers_raw = self.bgen['variants']
         self.bgen_idx = 0
 
     def parse_variant(self, index):
