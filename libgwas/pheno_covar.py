@@ -180,7 +180,7 @@ class PhenoCovar(object):
             if len(header) == 3:
                 if len(valid_names) + len(valid_indices) == 0:
                     valid_indices.append(1)
-            if header[0].upper() == "FID":
+            if header[0].upper() in ["FID", "ID_1"]:
                 phenotype_names = header[2:]
                 for name in valid_names:
                     try:
@@ -288,7 +288,7 @@ class PhenoCovar(object):
                 if len(var_names) + len(var_indices) == 0:
                     var_indices.append(2)
 
-            if header[0].upper() == "FID":
+            if header[0].upper() in ["FID", "ID_1"]:
                 for name in var_names:
                     if name.strip() != "":
                         try:
