@@ -127,7 +127,6 @@ class TestBase(unittest.TestCase):
         self.parser_info_thresh = bgen_parser.Parser.info_threshold
         bgen_parser.Parser.info_threshold = 0.0
 
-        self.additive_encoding = numpy.zeros((20, 12))
         self.raw = numpy.zeros((20, 12, 3))
 
         self.orig_id_encoding = PhenoCovar.id_encoding
@@ -182,6 +181,22 @@ class TestBGenBasics(TestBase):
         for id in ["ID%s" % str(x).zfill(4) for x in range(1,12)]:
             self.assertTrue(id in pc.pedigree_data)
 
+    def testAdditiveGeno(self):
+        pc = PhenoCovar()
+        parser = bgen_parser.Parser(self.nomissing)
+
+        parser.load_family_details(pc)
+        parser.load_genotypes()
+        idx = 0
+        for snp in parser:
+            print "-->", snp.chr, snp.genotype_data
+            print self.additive_encoding[idx]
+            self.assertEqual(self.positions[idx], snp.pos)
+            print snp.genotype_data.shape
+            for ind in range(snp.genotype_data.shape[0]):
+                print idx, ind
+                self.assertAlmostEqual(self.additive_encoding[idx][ind], snp.genotype_data[ind], places=4)
+            idx += 1
 
 if __name__ == "__main__":
     unittest.main()
