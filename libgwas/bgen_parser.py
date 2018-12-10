@@ -13,6 +13,7 @@ from . import BuildReportLine
 import sys
 import bgen_reader
 import impute_parser
+from locus import Locus
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -58,6 +59,7 @@ class Parser(DataParser):
         self.sample_filename = sample_filename
         self.meta_filename = meta_filename
         self.ind_mask = None
+        self.geno_mask = None       # this will be 3x in order to permit masking of rows within the 3xN vector of gt probs
         self.ind_count = -1
         self.bgen_idx = -1
 
@@ -125,6 +127,8 @@ class Parser(DataParser):
             sample_index += 1
 
         self.ind_mask = numpy.array(mask_components, dtype=numpy.int8)
+        self.geno_mask = self.ind_mask.reshape(self.ind_mask.shape[0], 1).repeat(3, axis=1)
+
         self.ind_count = self.ind_mask.shape[0]
         pheno_covar.freeze_subjects()
 
@@ -136,17 +140,21 @@ class Parser(DataParser):
         self.bgen_idx = 0
 
     def parse_variant(self, index):
-        locus = Locus()
-        v = self.markers_raw.loc[index]
+        if index < self.markers_raw.shape[0]:
+            locus = Locus()
+            v = self.markers_raw.loc[index]
 
-        locus.chr = v.chrom
-        locus.pos = v.pos
-        locus.alleles = v.allele_ids.split(",")
-        locus.rsid = v.rsid
-        if ":" in locus.rsid:
-            locus.rsid = locus.rsid.split(":")[0]
-        locus.cur_idx = index
-        locus.nalleles = locus.nalleles
+            locus.chr = v.chrom
+            locus.pos = v.pos
+            locus.alleles = v.allele_ids.split(",")
+            locus.rsid = v.rsid
+            if ":" in locus.rsid:
+                locus.rsid = locus.rsid.split(":")[0]
+            locus.cur_idx = index
+            locus.nalleles = v.nalleles
+
+            return locus
+        raise StopIteration
 
     # We'll assume that all files that have been associated with this
     # "dataset" are to be considered.
@@ -174,14 +182,11 @@ class Parser(DataParser):
         valid_individuals = numpy.sum(self.ind_mask==0)
         self.max_missing_geno = DataParser.snp_miss_tol * float(valid_individuals)
 
-
-
-
     def get_next_line(self):
         """If we reach the end of the file, we simply open the next, until we \
         run out of archives to process"""
         info = 1.0
-        locus = self.parse_variant(self.bgen_index)
+        locus = self.parse_variant(self.bgen_idx)
         self.bgen_idx += 1
         return locus, info
         #return line, info, exp_freq
@@ -205,19 +210,19 @@ class Parser(DataParser):
             nalleles = snpdata.nalleles
             iteration.rsid = snpdata.rsid
             if DataParser.boundary.TestBoundary(iteration.chr, iteration.pos, iteration.rsid):
-                genotypes = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute(), self.ind_mask).compressed()
-
+                genotypes = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute(), self.geno_mask).compressed().reshape(-1, 3)
+                print genotypes
                 if self.max_missing_geno is None or self.max_missing_geno > numpy.sum(genotypes == DataParser.missing_storage):
                     estimate = None
-                    maf = none
-                    if encoding == Encoding.Dominant:
+                    maf = None
+                    if encoding == impute_parser.Encoding.Dominant:
                         estimate = genotypes[:, 1] + genotypes[:, 2]
-                    elif encoding == Encoding.Additive:
+                    elif encoding == impute_parser.Encoding.Additive:
                         estimate = genotypes[:, 1] + 2 * genotypes[:, 2]
                         maf = estimate
-                    elif encoding == Encoding.Recessive:
+                    elif encoding == impute_parser.Encoding.Recessive:
                         estimate = genotypes[2]
-                    elif encoding == Encoding.Genotype:
+                    elif encoding == impute_parser.Encoding.Genotype:
                         estimate = numpy.full_like(genotypes.shape, 2)
                         estimate[genotypes[:, 1] > genotypes[:, 0] and genotypes[:, 1] > genotypes[:, 2]] = 1
                         estimate[genotypes[:, 0] > genotypes[:, 1] and genotypes[:, 0] > genotypes[:, 2]] = 0
