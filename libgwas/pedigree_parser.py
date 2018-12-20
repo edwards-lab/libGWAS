@@ -8,6 +8,7 @@ from exceptions import TooManyAlleles
 from . import sys_call
 from . import BuildReportLine
 from pheno_covar import PhenoCovar
+import logging
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"
@@ -81,14 +82,15 @@ class Parser(DataParser):
         self.load_genotypes(pheno_covar)
 
 
-    def ReportConfiguration(self, file):
+    def ReportConfiguration(self):
         """ Report configuration for logging purposes.
 
         :param file: Destination for report details
         :return: None
         """
-        print >> file, BuildReportLine("PED FILE", self.datasource)
-        print >> file, BuildReportLine("MAP FILE", self.mapfile)
+        log = logging.getLogger('ped_parser::ReportConfiguration')
+        log.info(BuildReportLine("PED FILE", self.datasource))
+        log.info(BuildReportLine("MAP FILE", self.mapfile))
 
     def load_mapfile(self, map3=False):
         """Load the marker data

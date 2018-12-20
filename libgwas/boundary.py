@@ -2,6 +2,7 @@ import collections
 from exceptions import InvalidBoundarySpec
 from . import BuildReportLine
 import os
+import logging
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"
@@ -161,22 +162,23 @@ class BoundaryCheck(object):
             return BoundaryCheck.chrom == -1
         return False
 
-    def ReportConfiguration(self, f):
+    def ReportConfiguration(self):
         """Report the boundary configuration details
 
         :param f: File (or standard out/err)
         :return: None
         """
 
+        log = logging.getLogger('Boundary::ReportConfiguration')
         if BoundaryCheck.chrom != -1:
-            print >> f, BuildReportLine("CHROM", BoundaryCheck.chrom)
+            log.info(BuildReportLine("CHROM", BoundaryCheck.chrom))
             if len(self.bounds) > 0:
-                print >> f, BuildReportLine("SNP BOUNDARY", "-".join(
-                    [str(x) for x in self.bounds]))
+                log.info(BuildReportLine("SNP BOUNDARY", "-".join(
+                    [str(x) for x in self.bounds])))
         if len(self.ignored_rs) > 0:
-            print >> f, BuildReportLine("IGNORED RS", ",".join(self.ignored_rs))
+            log.info(BuildReportLine("IGNORED RS", ",".join(self.ignored_rs)))
         if len(self.target_rs) > 0:
-            print >> f, BuildReportLine("TARGET RS", ",".join(self.target_rs))
+            log.info(BuildReportLine("TARGET RS", ",".join(self.target_rs)))
 
     def LoadSNPs(self, snps=[]):
         """Define the SNP inclusions (by RSID). This overrides true boundary \

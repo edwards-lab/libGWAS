@@ -104,16 +104,16 @@ class Parser(transposed_pedigree_parser.Parser):
         self.load_genotypes()
 
 
-    def ReportConfiguration(self, file):
+    def ReportConfiguration(self):
         """ Report configuration for logging purposes.
 
         :param file: Destination for report details
         :return: None
         """
-
-        print >> file, BuildReportLine("BED_FILE", self.bed_file)
-        print >> file, BuildReportLine("BIM_FILE", self.bim_file)
-        print >> file, BuildReportLine("FAMFILE", self.fam_file)
+        log = logging.getLogger('bed_parser::ReportConfiguration')
+        log.info(BuildReportLine("BED_FILE", self.bed_file))
+        log.info(BuildReportLine("BIM_FILE", self.bim_file))
+        log.info(BuildReportLine("FAMFILE", self.fam_file))
 
     def load_fam(self, pheno_covar=None):
         """Load contents from the .fam file, updating the pheno_covar with \

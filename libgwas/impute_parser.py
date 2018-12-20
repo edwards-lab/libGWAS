@@ -8,6 +8,7 @@ from exceptions import TooFewAlleles
 import gzip
 import numpy
 from exceptions import InvalidSelection
+import logging
 import os
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
@@ -130,22 +131,24 @@ class Parser(DataParser):
         #: List of chroms to match files listed in archives
         self.chroms = chroms
 
+        self.check_freq_header = True
 
-    def ReportConfiguration(self, file):
+    def ReportConfiguration(self):
         """
         :param file: Destination for report details
         :return: None
         """
         global encodingpar
-        print >> file, BuildReportLine("FAM FILE", self.fam_details)
-        print >> file, BuildReportLine("IMPUTE_ARCHIVES", "%s:%s" % (str(self.chroms[0]), self.archives[0]))
+        log = logging.getLogger('impute_parser::ReportConfiguration')
+        log.info(BuildReportLine("FAM FILE", self.fam_details))
+        log.info(BuildReportLine("IMPUTE_ARCHIVES", "%s:%s" % (str(self.chroms[0]), self.archives[0])))
         idx = 0
         for arch in self.archives[1:]:
-            print >> file, BuildReportLine("", "%s:%s" % (str(self.chroms[idx+1]), arch))
+            log.info(BuildReportLine("", "%s:%s" % (str(self.chroms[idx+1]), arch)))
             idx += 1
-        print >> file, BuildReportLine("ENCODING", ["Additive", "Dominant", "Recessive", "Genotype", "Raw"][encoding])
-        print >> file, BuildReportLine("INFO-EXT", Parser.info_ext)
-        print >> file, BuildReportLine("INFO-THRESH", Parser.info_threshold)
+            log.info(BuildReportLine("ENCODING", ["Additive", "Dominant", "Recessive", "Genotype", "Raw"][encoding]))
+            log.info(BuildReportLine("INFO-EXT", Parser.info_ext))
+        log.info(BuildReportLine("INFO-THRESH", Parser.info_threshold))
 
     def load_family_details(self, pheno_covar):
         """Load family data updating the pheno_covar with  family ids found.
@@ -164,8 +167,12 @@ class Parser(DataParser):
             indid = PhenoCovar.build_id(words)
             if DataParser.valid_indid(indid):
                 mask_components.append(0)
-                sex = int(words[5])
-                pheno = float(words[6])
+                if len(words) > 3:
+                    sex = int(words[5])
+                    pheno = float(words[6])
+                else:
+                    sex = DataParser.missing_representation
+                    pheno = DataParser.missing_representation
                 pheno_covar.add_subject(indid, sex, pheno)
             else:
                 mask_components.append(1)
@@ -195,6 +202,7 @@ class Parser(DataParser):
                 self.freq_file = gzip.open("%s" % (self.current_file), 'rb')
             else:
                 self.freq_file = open(self.current_file)
+            self.check_freq_header = True
             self.current_chrom = self.chroms[self.file_index]
             self.file_index += 1
         else:
@@ -205,6 +213,8 @@ class Parser(DataParser):
         run out of archives to process"""
 
         line = self.freq_file.readline().strip().split()
+        if self.check_freq_header and (len(line) > 0 and (line[0] in ['S','s'])):
+            line = self.freq_file.readline().strip().split()
         if len(line) < 1:
             self.load_genotypes()
             line = self.freq_file.readline().strip().split()

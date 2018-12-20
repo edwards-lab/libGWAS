@@ -14,6 +14,7 @@ import sys
 import bgen_reader
 import impute_parser
 from locus import Locus
+import logging
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -46,6 +47,10 @@ class Parser(DataParser):
     #: The threshold associated with the .info info column
     info_threshold = 0.4
 
+    # It is possible that there are no chromosomes in the locus details (such as gen files converted to bgen). In
+    # these cases, we assume that the user will be working on a file that has only one chromosome and that
+    # chromosome was specified by the application
+    default_chromosome = -1
 
     def __init__(self, bgen_filename, sample_filename=None, meta_filename=None):
         """Support is present only for a single .bgen file (and possibly corresponding sample file)
@@ -78,12 +83,13 @@ class Parser(DataParser):
         self.open_bgen()
 
 
-    def ReportConfiguration(self, file):
-        print >> file, BuildReportLine("BGEN FILE", self.bgen_filename)
+    def ReportConfiguration(self):
+        log = logging.getLogger('bgen_parser::ReportConfiguration')
+        log.info(BuildReportLine("BGEN FILE", self.bgen_filename))
         if self.sample_filename is not None:
-            print >> file, BuildReportLine("SAMPLE FILE", self.sample_filename)
+            log.info(BuildReportLine("SAMPLE FILE", self.sample_filename))
         if self.meta_filename is not None:
-            print >> file, BuildReportLine("mETA FILE", self.meta_filename)
+            log.info(BuildReportLine("META FILE", self.meta_filename))
 
 
     def load_family_details(self, pheno_covar):
@@ -137,22 +143,27 @@ class Parser(DataParser):
                                           sample_file=self.sample_filename,
                                           verbose=False)
         self.markers_raw = self.bgen['variants']
+
         self.bgen_idx = 0
 
     def parse_variant(self, index):
+        log = logging.getLogger('bgen_parser::open_bgen')
         if index < self.markers_raw.shape[0]:
             locus = Locus()
             v = self.markers_raw.loc[index]
 
             locus.chr = v.chrom
+
+            if locus.chr.strip() == "" and Parser.default_chromosome != -1:
+                locus.chr = Parser.default_chromosome
             locus.pos = v.pos
             locus.alleles = v.allele_ids.split(",")
             locus.rsid = v.rsid
-            if ":" in locus.rsid:
-                locus.rsid = locus.rsid.split(":")[0]
+            for component in locus.rsid.split(":"):
+                if component[0:3] == 'rs':
+                    locus.rsid = component
             locus.cur_idx = index
             locus.nalleles = v.nalleles
-
             return locus
         raise StopIteration
 
@@ -211,15 +222,14 @@ class Parser(DataParser):
             iteration.rsid = snpdata.rsid
             if DataParser.boundary.TestBoundary(iteration.chr, iteration.pos, iteration.rsid):
                 genotypes = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute(), self.geno_mask).compressed().reshape(-1, 3)
-                print genotypes
                 if self.max_missing_geno is None or self.max_missing_geno > numpy.sum(genotypes == DataParser.missing_storage):
                     estimate = None
                     maf = None
+                    additive_estimate = genotypes[:, 1] + 2 * genotypes[:, 2]
                     if encoding == impute_parser.Encoding.Dominant:
                         estimate = genotypes[:, 1] + genotypes[:, 2]
                     elif encoding == impute_parser.Encoding.Additive:
-                        estimate = genotypes[:, 1] + 2 * genotypes[:, 2]
-                        maf = estimate
+                        estimate = additive_estimate
                     elif encoding == impute_parser.Encoding.Recessive:
                         estimate = genotypes[2]
                     elif encoding == impute_parser.Encoding.Genotype:
@@ -227,20 +237,20 @@ class Parser(DataParser):
                         estimate[genotypes[:, 1] > genotypes[:, 0] and genotypes[:, 1] > genotypes[:, 2]] = 1
                         estimate[genotypes[:, 0] > genotypes[:, 1] and genotypes[:, 0] > genotypes[:, 2]] = 0
                     iteration.non_missing_alc = genotypes.shape[0] * 2
-                    if maf is None:
-                        maf = genotypes[:, 1] + 2 * genotypes[:, 2]
-                    maf = numpy.mean(maf)/2
+                    maf = numpy.mean(additive_estimate)/2
                     iteration.allele_count2 = maf * (iteration.non_missing_alc * 2)
                     iteration.effa_freq = maf
-
+                    iteration.major_allele, iteration.minor_allele = snpdata.alleles
                     if maf > 0.5:
                         iteration.min_allele_count = iteration.non_missing_alc - iteration.allele_count2
                         iteration.maj_allele_count = iteration.allele_count2
                         maf = 1.0 - maf
+                        mallele = iteration.major_allele
+                        iteration.maj_allele = iteration.minor_allele
+                        iteration.minor_allele = mallele
                     else:
                         iteration.min_allele_count = iteration.allele_count2
                         iteration.maj_allele_count = iteration.non_missing_alc - iteration.allele_count2
-
                     iteration._maf = maf
                     iteration.genotype_data = numpy.array(estimate)
 
@@ -253,6 +263,9 @@ class Parser(DataParser):
 
         else:
             return False
+
+    def get_effa_freq(self, genotypes):
+        return numpy.mean(genotypes)/2
 
     def __iter__(self):
         """Reset the file and begin iteration"""

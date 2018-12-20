@@ -5,6 +5,7 @@ from exceptions import TooFewAlleles
 import gzip
 import numpy
 from pheno_covar import PhenoCovar
+import logging
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -57,9 +58,10 @@ class Parser(DataParser):
         return Parser(self.tfam_file, self.tped_file)
 
 
-    def ReportConfiguration(self, file):
-        print >> file, BuildReportLine("TPED FILE", self.tped_file)
-        print >> file, BuildReportLine("TFAM FILE", self.tfam_file)
+    def ReportConfiguration(self):
+        log = logging.getLogger('tped_parser::ReportConfiguration')
+        log.info(BuildReportLine("TPED_FILE", self.tped_file))
+        log.info(BuildReportLine("TFAM FILE", self.tfam_file))
 
     def load_tfam(self, pheno_covar):
         """Load the pedigree portion of the data and sort out exclusions"""

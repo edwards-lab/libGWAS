@@ -10,6 +10,7 @@ import numpy
 from exceptions import InvalidSelection
 import os
 
+import logging
 from pheno_covar import PhenoCovar
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
@@ -144,27 +145,28 @@ class Parser(DataParser):
         assert len(self.info_files) == len(self.archives)
 
 
-    def ReportConfiguration(self, file):
+    def ReportConfiguration(self):
         """Report the configuration details for logging purposes.
 
         :param file: Destination for report details
         :return: None
         """
+        log = logging.getLogger('mach_parser::ReportConfiguration')
         global encodingpar
-        print >> file, libgwas.BuildReportLine("MACH_ARCHIVES", "")
+        log.info(libgwas.BuildReportLine("MACH_ARCHIVES", ""))
         if self.chrpos_encoding:
-            print >> file, libgwas.BuildReportLine("MACH_CHRPOS",
+            log.info(libgwas.BuildReportLine("MACH_CHRPOS",
                                     ("IDS expected to be in format chr:pos" +
                                     " SNP boundary filters might not work " +
-                                    "(see manual for details)"))
+                                    "(see manual for details)")))
         else:
-            print >> file, libgwas.BuildReportLine("MACH_CHRPOS",
-                                    "IDs are treated like RSIDs")
+            log.info(libgwas.BuildReportLine("MACH_CHRPOS",
+                                    "IDs are treated like RSIDs"))
         idx = 0
         for arch in self.archives[0:]:
-            print >> file, libgwas.BuildReportLine("", "%s:%s" % (self.archives[idx], self.info_files[idx]))
+            log.info(libgwas.BuildReportLine("", "%s:%s" % (self.archives[idx], self.info_files[idx])))
             idx += 1
-        print >> file, libgwas.BuildReportLine("ENCODING", ["Dosage", "Genotype"][encoding])
+        log.info(libgwas.BuildReportLine("ENCODING", ["Dosage", "Genotype"][encoding]))
 
 
     def load_family_details(self, pheno_covar):

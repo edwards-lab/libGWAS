@@ -12,6 +12,7 @@ from . import Exit
 from . import BuildReportLine
 from . import GenotypeData as GenotypeData
 import sys
+import logging
 
 from contextlib import contextmanager
 __copyright__ = "Eric Torstenson"
@@ -141,9 +142,10 @@ class Parser(DataParser):
     def getnew(self):
         return Parser(self.vcf_filename, self.data_field)
 
-    def ReportConfiguration(self, file):
-        print >> file, BuildReportLine("VCF FILE", self.filename)
-        print >> file, BuildReportLine("DATA FIELD", self.data_field)
+    def ReportConfiguration(self):
+        log = logging.getLogger('bed_parser::ReportConfiguration')
+        log.info(BuildReportLine("VCF FILE", self.filename))
+        log.info(BuildReportLine("DATA FIELD", self.data_field))
 
     def init_subjects(self, pheno_covar):
         sample_ids = []
