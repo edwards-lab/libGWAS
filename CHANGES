@@ -1,2 +1,4 @@
 libGWAS.py: 1.0.0 released
 	* Migrated library out from MVtest in preparation for release of new analysis program
+libGWAS.py: 1.1.0
+    * Added support for bgen and vcf file formats
