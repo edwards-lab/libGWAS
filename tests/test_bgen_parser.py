@@ -189,12 +189,8 @@ class TestBGenBasics(TestBase):
         parser.load_genotypes()
         idx = 0
         for snp in parser:
-            print "-->", snp.chr, snp.genotype_data
-            print self.additive_encoding[idx]
             self.assertEqual(self.positions[idx], snp.pos)
-            print snp.genotype_data.shape
             for ind in range(snp.genotype_data.shape[0]):
-                print idx, ind
                 self.assertAlmostEqual(self.additive_encoding[idx][ind], snp.genotype_data[ind], places=4)
             idx += 1
 
