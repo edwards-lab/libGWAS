@@ -383,4 +383,6 @@ class Parser(transposed_pedigree_parser.Parser):
         return ParsedLocus(self)
 
 
+    def get_effa_freq(self, genotypes):
+        return numpy.sum(numpy.array(genotypes))/float(len(genotypes))
 
