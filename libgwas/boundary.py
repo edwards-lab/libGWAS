@@ -73,6 +73,8 @@ class BoundaryCheck(object):
         #: True if boundary conditions remain true
         self.valid = True
 
+        self.logger = logging.getLogger('boundary::BoundaryCheck')
+
         # Users can define an boundary that has no tangible limits
         if bp[0] is not None or kb[0] is not None or mb[0] is not None:
             if bp[0] != None and bp[0] + bp[1] > 0:
@@ -127,27 +129,46 @@ class BoundaryCheck(object):
 
         # We can skip over anything that has a negative boundary
         if pos < 0:
+            self.logger.debug("%d:%d %s Invalid Position" % (chr, pos, rsid))
             return False
 
         # Skip over anything that has been explicitly ignored
         if rsid in self.ignored_rs:
+            self.logger.debug("%d:%d %s ignored RS ID" % (chr, pos, rsid))
             return False
 
         # If Chromosome isn't defined, then we have no bounds
         if BoundaryCheck.chrom == -1:
-            return pos not in self.dropped_snps[chr]
+            if pos in self.dropped_snps[chr]:
+                self.logger.debug("%d:%d %s pos in dropped_snps" % (chr, pos, rsid))
+                return False
+            return True
 
         self.beyond_upper_bound = chr > BoundaryCheck.chrom
+        if not self.beyond_upper_bound:
+            if chr == BoundaryCheck.chrom:
+                if len(self.bounds) == 0:
+                    if pos in self.dropped_snps[chr]:
+                        self.logger.debug(
+                            "%d:%d %s pos in dropped_snps" % (chr, pos, rsid))
+                        return False
+                    return True
 
-        if chr == BoundaryCheck.chrom:
-            if len(self.bounds) == 0:
-                return pos not in self.dropped_snps[chr]
+                if (pos>=self.bounds[0]) and (pos<=self.bounds[1]):
+                    if pos in self.dropped_snps[chr]:
+                        self.logger.debug(
+                            "%d:%d %s in dropped snps" % (chr, pos, rsid))
 
-            if (pos>=self.bounds[0]) and (pos<=self.bounds[1]):
-                return pos not in self.dropped_snps[chr]
-            self.beyond_upper_bound = pos > self.bounds[1]
+                        return False
+                    return True
+                self.beyond_upper_bound = pos > self.bounds[1]
+        else:
+            self.logger.debug("%d:%d %s beyond upper bound" % (chr, pos, rsid))
 
-        return rsid in self.target_rs
+        if rsid not in self.target_rs:
+            self.logger.debug("%d:%d %s rs not in target list" % (chr, pos, rsid))
+            return False
+        return True
 
     def NoExclusions(self):
         """Determine that there are no exclusion criterion in play
@@ -197,6 +218,9 @@ class BoundaryCheck(object):
                 if bounds[0] != "":
                     self.target_rs.append(bounds[0])
             else:
+                self.logger.debug(
+                    "%d:%d %s invalid boundary spec" % (snp.chr, snp.pos, snp.rsid))
+
                 raise InvalidBoundarySpec(snp)
 
 
