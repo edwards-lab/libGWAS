@@ -16,6 +16,7 @@ __license__ = "GPL3.0"
 #     You should have received a copy of the GNU General Public License
 #     along with MVtest.  If not, see <http://www.gnu.org/licenses/>.
 
+
 class ReportableException(Exception):
     """Simple exeception with message"""
     def __init__(self, msg):

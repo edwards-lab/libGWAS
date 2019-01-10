@@ -8,6 +8,9 @@ import gzip
 import numpy
 import os
 import tabix
+from . import sys_call
+from . import ExitIf
+
 from . import Exit
 from . import BuildReportLine
 from . import GenotypeData as GenotypeData
@@ -144,7 +147,7 @@ class Parser(DataParser):
 
     def ReportConfiguration(self):
         log = logging.getLogger('bed_parser::ReportConfiguration')
-        log.info(BuildReportLine("VCF FILE", self.filename))
+        log.info(BuildReportLine("VCF FILE", self.vcf_filename))
         log.info(BuildReportLine("DATA FIELD", self.data_field))
 
     def init_subjects(self, pheno_covar):
@@ -193,7 +196,46 @@ class Parser(DataParser):
                     if line[0:2] == "#C":
                         break
 
+    def load_family_details(self, pheno_covar):
+        """Load contents from the .fam file, updating the pheno_covar with \
+            family ids found.
 
+        :param pheno_covar: Phenotype/covariate object
+        :return: None
+        """
+        self.file_index = 0
+        # 1s indicate an individual is to be masked out
+        mask_components = []
+
+        file = OpenFile(self.vcf_filename, DataParser.compressed_pedigree)
+        sample_ids = None
+
+        while sample_ids is None:
+            line = file.readline().split()
+            if line[0] == "#CHROM":
+                sample_ids = line[9:]
+
+        print len(sample_ids), "Were found!!!!!"
+
+        ids_observed = set()
+        for indid in sample_ids:
+
+            # This is a side effect of transforming binary pedigree into
+            # VCF using plink2. Not sure if this should be a part of the
+            # program or if it could mess up legitimate IDs
+            indid = indid.replace("_", ":")
+            ExitIf("Duplicate ID found in dose file: %s" % (indid), indid in ids_observed)
+            ids_observed.add(indid)
+
+            if DataParser.valid_indid(indid):
+                mask_components.append(0)
+                pheno_covar.add_subject(indid, PhenoCovar.missing_encoding, PhenoCovar.missing_encoding)
+            else:
+                mask_components.append(1)
+
+        self.ind_mask = numpy.array(mask_components) == 1
+        self.ind_count = self.ind_mask.shape[0]
+        pheno_covar.freeze_subjects()
 
     def load_genotypes(self):
         self.reset()
@@ -263,6 +305,8 @@ class Parser(DataParser):
                 allele_counts = [geno.ref_counts, geno.alt_counts]
                 iteration.hetero_counts = geno.het_counts
                 iteration.missing_allele_count = geno.missing
+                iteration.allele_count2 = allele_counts[1]
+                iteration.effa_freq = geno.maf()
                 if allele_counts[0] < allele_counts[1]:
                     allele_counts = [allele_counts[1], allele_counts[0]]
                     alleles = [alleles[1], alleles[0]]
@@ -281,7 +325,9 @@ class Parser(DataParser):
                 return False
         return False
 
-                
+
+    def get_effa_freq(self, genotypes):
+        return numpy.sum(numpy.array(genotypes))/float(len(genotypes))
 
 
 
