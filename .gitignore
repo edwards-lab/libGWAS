@@ -4,6 +4,7 @@ sync
 .DS_Store
 .idea
 *.egg
+*.eggs
 *.zip
 *.egg-info
 *_build
