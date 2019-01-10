@@ -68,8 +68,8 @@ class GenotypeData(object):
     def append(self, gt):
         gt = GenotypeData.conversion[gt]
         if gt >= 0:
-            self.ref_counts = 2-gt
-            self.alt_counts = gt
+            self.ref_counts += 2-gt
+            self.alt_counts += gt
             if gt == 1:
                 self.het_counts += 1
         else:
