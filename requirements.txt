@@ -4,9 +4,8 @@
 # be that it will work.
 
 libgwas
-pytabix>=0.0.2
 SciPy>=0.12
 NumPy>=1.7.1
 bgen-reader>=2.0.8
-pytabix>=0.1
+pytabix>=0.0.2
 enum34

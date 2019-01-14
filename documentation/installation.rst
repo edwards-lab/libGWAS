@@ -2,8 +2,11 @@ Installation
 ============
 libGWAS requires python 2.7.x as well as the following libraries:
 
-* NumPy (version 1.7.2 or later)   www.numpy.org
-* SciPY (version 0.13.2 or later)  www.scipy.org
+* NumPy (version 1.7.2 or later)            www.numpy.org
+* SciPY (version 0.13.2 or later)           www.scipy.org
+* pytabix (version 0.0.2 or later)          https://pypi.org/project/pytabix/
+* bgen-reader (version 2.0.8 or later)      https://pypi.org/project/bgen-reader/
+* enum34                                    https://pypi.org/project/enum34/
 
 libGWAS's installation will attempt to install these required components
 for you, however, it requires that you have write permission to the
