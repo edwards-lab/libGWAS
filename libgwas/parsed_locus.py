@@ -1,4 +1,7 @@
 from locus import Locus
+import allele_counts
+from exceptions import InvalidFrequency
+import data_parser
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"
@@ -17,6 +20,22 @@ __license__ = "GPL3.0"
 #     You should have received a copy of the GNU General Public License
 #     along with MVtest.  If not, see <http://www.gnu.org/licenses/>.
 
+
+# Extract genotypes from raw genotypes (considering missing @ phenotype)
+# Convert genotypes to analyzable form if there is any need
+def default_geno_extraction(alleles, rawgeno, non_missing):
+    genotypes = rawgeno[non_missing]
+
+    het = sum(genotypes == 1)
+    a1c = (2 * sum(genotypes==0))
+    a2c = (2 * sum(genotypes==2))
+
+    alc = allele_counts.AlleleCounts(genotypes, alleles)
+    alc.set_allele_counts(a1c, a2c)
+    return alc
+
+
+
 class ParsedLocus(Locus):
     """Locus data representing current iteration from a dataset
 
@@ -34,6 +53,24 @@ class ParsedLocus(Locus):
         self.cur_idx            = index
         #: Actual genotype data for this locus
         self.genotype_data      = None
+        #: Genotypes missing at locus as well as individuals marked to be ignored
+        self.missing_genotypes = None       # True for 1 locus only
+
+        self._extract_genotypes = default_geno_extraction
+
+    def get_genotype_data(self, non_missing):
+        """Return genotypes filtered by the missing phenotypes encapsulated in an AlleleCounts object"""
+        alc = self._extract_genotypes(self.alleles, self.genotype_data, non_missing)
+        if alc.maf < data_parser.DataParser.min_maf or alc.maf > data_parser.DataParser.max_maf:
+            raise InvalidFrequency(chr=self.chr,
+                                   pos=self.pos,
+                                   rsid=self.rsid,
+                                   maf=alc.maf,
+                                   almin=alc.minor_allele,
+                                   almaj=alc.major_allele,
+                                   a2c=alc.a2_count)
+
+        return alc
 
     def next(self):
         """Move to the next valid locus.
@@ -48,6 +85,11 @@ class ParsedLocus(Locus):
 
         raise StopIteration
 
+    def filter_on_y(self, y_missing):
+        locus = FilteredLocus()
+        locus.filter(y_missing)
+
+        return locus
 
     def __iter__(self):
         """Basic iterator functionality. """

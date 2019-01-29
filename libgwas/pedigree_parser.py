@@ -59,14 +59,16 @@ class Parser(DataParser):
         #: data (each position represents an individual)
         self.individual_mask = 0
 
+        self.ind_count = 0
+        self.snp_mask = None
         #: Number of valid loci
-        locus_count = None
+        self.locus_count = None
         #: List of valid Locus Objects
-        markers = None
+        self.markers = None
         #: List of both alleles for each valid locus
         alleles = None
         #: List of all SNP names for valid loci
-        rsids = None
+        self.rsids = None
         #: List of MAF at each locus
         markers_maf = None
 
@@ -253,39 +255,16 @@ class Parser(DataParser):
                 raise TooManyAlleles(chr=self.markers[i][0],
                                      rsid=self.rsids[i],
                                      alleles=alleles)
+            if len(alleles) < 2:
+                raise TooFewAlleles(chr=self.markers[i][0],
+                                    rsid=self.rsids[i],
+                                    alleles=alleles)
 
-            allele_count1 = numpy.sum(snp_geno==alleles[0])
-            allele_count2 = 0
-            maf = 0
-
-            if len(alleles) > 1:
-                allele_count2 = numpy.sum(snp_geno==alleles[1])
-                real_allele_count2 = allele_count2
-
-                if allele_count2 > allele_count1:
-                    sorted_alleles = [alleles[1], alleles[0]]
-                    alleles = sorted_alleles
-                    allele_count = allele_count1
-                    allele_count1 = allele_count2
-                    allele_count2 = allele_count
-                maf = allele_count2 / float(allele_count1 + allele_count2)
-                allele_count2s.append(allele_count2)
-                #genotypes = []
-                major_allele       = alleles[0]
-                minor_allele       = alleles[1]
-
-                genotype_data = numpy.sum(snp_geno==alleles[1], axis=1)
-                genotype_data[
-                    snp_geno[:, 0]==DataParser.missing_representation] = \
-                    DataParser.missing_storage
-            else:
-                major_allele = alleles[0]
-                minor_allele = '?'
-
-            missing = numpy.sum(genotype_data==DataParser.missing_storage)
-            if maf == 0 or maf < DataParser.min_maf or \
-                            maf > DataParser.max_maf or \
-                            max_missing_individuals < missing:
+            genotype_data = numpy.sum(snp_geno == alleles[1], axis=1)
+            # Correct the missing stuff, since those will have summed up to be nonsense
+            genotype_data[snp_geno[:, 0] == DataParser.missing_representation] = DataPrser.missing_storage
+            missing = numpy.sum(genotype_data == DataParser.missing_storage)
+            if max_missing_individuals < missing:
                 locus_details = self.markers[i]
                 DataParser.boundary.dropped_snps[
                     locus_details[0]].add(locus_details[1])
@@ -297,15 +276,11 @@ class Parser(DataParser):
                 valid_snps += 1
                 valid_markers.append(list(self.markers[i]))
                 valid_rsids.append(self.rsids[i])
-                valid_allele_list.append([major_allele, minor_allele])
-                valid_maf.append(maf)
 
         self.markers = valid_markers
-        self.alleles = valid_allele_list
         self.rsids   = valid_rsids
         self.locus_count = valid_snps
         self.genotypes = self.genotypes[0:self.locus_count, :]
-        self.allele_count2s = allele_count2s
 
     def get_loci(self):
         return self.markers
@@ -326,16 +301,22 @@ class Parser(DataParser):
             iteration.chr = self.markers[cur_idx][0]
             iteration.pos = self.markers[cur_idx][1]
             iteration.rsid = self.rsids[cur_idx]
+            iteration.genotype_data = self.genotypes[cur_idx, :]
+            iteration.missing_genotypes = iteration.genotype_data == DataParser.missing_storage
+            return True
+            """
+            iteration.allele_count2 = self.allele_count2s[cur_idx]
+
             iteration.major_allele = self.alleles[cur_idx][0]
             iteration.minor_allele = self.alleles[cur_idx][1]
-            iteration.allele_count2 = self.allele_count2s[cur_idx]
-            iteration.genotype_data = self.genotypes[cur_idx, :]
+
             hetero = numpy.sum(iteration.genotype_data==1)
             iteration.min_allele_count = numpy.sum(
                 iteration.genotype_data==2)*2 + hetero
             iteration.maj_allele_count = numpy.sum(
                 iteration.genotype_data==0)*2 + hetero
             return True
+            """
         else:
             raise StopIteration
 

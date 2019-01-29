@@ -112,6 +112,7 @@ class Parser(DataParser):
             self.genotype_file = gzip.open("%s.gz" % self.tped_file, 'rb')
         else:
             self.genotype_file = open(self.tped_file)
+
         self.filter_missing()
 
     def process_genotypes(self, data):
@@ -191,7 +192,7 @@ class Parser(DataParser):
         self.ind_mask[:,0] = self.ind_mask[:,0]|dropped_individuals
         self.ind_mask[:,1] = self.ind_mask[:,1]|dropped_individuals
 
-        valid_individuals = numpy.sum(self.ind_mask==0)
+        valid_individuals = numpy.sum(self.ind_mask[:, 0]==0)
         max_missing = DataParser.snp_miss_tol * valid_individuals
 
         self.locus_count = 0

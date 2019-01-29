@@ -187,7 +187,7 @@ class Parser(transposed_pedigree_parser.Parser):
                     chr, rsid, gd, pos, al1, al2 = line.strip().split()
                 self.markers[index, 0] = int(chr)
                 self.markers[index, 1] = int(pos)
-                self.alleles.append([al1, al2])
+                self.alleles.append([al2, al1])
                 self.rsids.append(rsid)
                 index += 1
         self.locus_count = self.markers.shape[0]
@@ -337,37 +337,30 @@ class Parser(transposed_pedigree_parser.Parser):
         if cur_idx < self.total_locus_count:
             buffer = struct.unpack(self.fmt_string,
                                    self.genotype_file.read(self.bytes_per_read))
-            genotypes = numpy.ma.MaskedArray(self.extract_genotypes(buffer),
+            iteration.genotype_data = numpy.ma.MaskedArray(self.extract_genotypes(buffer),
                                              self.ind_mask).compressed()
 
             iteration.chr, iteration.pos = self.markers[cur_idx]
             iteration.rsid = self.rsids[cur_idx]
+            iteration.alleles = self.alleles[cur_idx]
+            iteration.missing_genotypes = iteration.genotype_data == DataParser.missing_storage
+            return DataParser.boundary.TestBoundary(iteration.chr,
+                                                    iteration.pos,
+                                                    iteration.rsid)
 
-
-            if DataParser.boundary.TestBoundary(iteration.chr,
-                                                iteration.pos,
-                                                iteration.rsid):
-                hz_count = numpy.sum(genotypes==1)
-                allele_count1 = numpy.sum(genotypes==0)*2 + hz_count
-                allele_count2 = numpy.sum(genotypes==2)*2 + hz_count
-                iteration.minor_allele, \
-                    iteration.major_allele = self.alleles[cur_idx]
-
-                if allele_count2 > allele_count1:
-                    iteration.maj_allele_count = allele_count2
-                    iteration.min_allele_count = allele_count1
-                else:
-                    iteration.maj_allele_count = allele_count1
-                    iteration.min_allele_count = allele_count2
-                iteration.allele_count2 = allele_count2
-                iteration.genotype_data = genotypes
-                maf = iteration.maf
-                iteration.hetero_count = hz_count
-                return maf >= DataParser.min_maf and \
-                       maf <= DataParser.max_maf
         else:
             raise StopIteration
         return False
+
+    def filter_genotypes(self, genotypes):
+        plocus = AlleleCounts(genotypes)
+        plocus.het_count = numpy.sum(genotypes==1)
+        a1 = numpy.sum(genotypes==0) + plocus.het
+        a2 = numpy.sum(genotypes==2) + plocus.het
+
+        plocus.set_allele_counts(a1, a2, self.alleles)
+
+
 
     def __iter__(self):
         """Use itself as the iterator, starting back at beginning of the \

@@ -5,6 +5,7 @@ from parsed_locus import ParsedLocus
 from exceptions import TooManyAlleles
 from exceptions import TooFewAlleles
 from bgen_reader import read_bgen
+from impute_parser import gen_dosage_extraction
 # from exceptions import StopIteration
 import numpy
 import os
@@ -191,6 +192,7 @@ class Parser(DataParser):
             self.ind_mask = self.ind_mask | dropped_individuals
 
         valid_individuals = numpy.sum(self.ind_mask==0)
+
         self.max_missing_geno = DataParser.snp_miss_tol * float(valid_individuals)
 
     def get_next_line(self):
@@ -218,10 +220,15 @@ class Parser(DataParser):
         if info > Parser.info_threshold:
             iteration.chr = snpdata.chr
             iteration.pos = snpdata.pos
+            iteration.alleles = snpdata.alleles
             nalleles = snpdata.nalleles
             iteration.rsid = snpdata.rsid
             if DataParser.boundary.TestBoundary(iteration.chr, iteration.pos, iteration.rsid):
-                genotypes = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute(), self.geno_mask).compressed().reshape(-1, 3)
+                iteration.genotype_data = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute(), self.geno_mask).compressed().reshape(-1, 3)
+                # Assuming that if we are missing the first dose, then we are missing them all
+                iteration.missing_genotypes = iteration.genotype_data[:, 0] == DataParser.missing_storage
+                return self.max_missing_geno is None or (numpy.sum(iteration.missing) < self.max_missing_geno)
+
                 if self.max_missing_geno is None or self.max_missing_geno > numpy.sum(genotypes == DataParser.missing_storage):
                     estimate = None
                     maf = None
@@ -264,10 +271,57 @@ class Parser(DataParser):
         else:
             return False
 
+
+    def filter_genotypes(self, missing):
+        genotypes = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute(),
+                                         self.geno_mask).compressed().reshape(-1, 3)
+
+        estimate = None
+        maf = None
+        additive_estimate = genotypes[:, 1] + 2 * genotypes[:, 2]
+        if encoding == impute_parser.Encoding.Dominant:
+            estimate = genotypes[:, 1] + genotypes[:, 2]
+        elif encoding == impute_parser.Encoding.Additive:
+            estimate = additive_estimate
+        elif encoding == impute_parser.Encoding.Recessive:
+            estimate = genotypes[2]
+        elif encoding == impute_parser.Encoding.Genotype:
+            estimate = numpy.full_like(genotypes.shape, 2)
+            estimate[genotypes[:, 1] > genotypes[:, 0] and genotypes[:, 1] > genotypes[:, 2]] = 1
+            estimate[genotypes[:, 0] > genotypes[:, 1] and genotypes[:, 0] > genotypes[:, 2]] = 0
+        iteration.non_missing_alc = genotypes.shape[0] * 2
+        maf = numpy.mean(additive_estimate) / 2
+        iteration.allele_count2 = maf * (iteration.non_missing_alc * 2)
+        iteration.effa_freq = maf
+        iteration.major_allele, iteration.minor_allele = snpdata.alleles
+        if maf > 0.5:
+            iteration.min_allele_count = iteration.non_missing_alc - iteration.allele_count2
+            iteration.maj_allele_count = iteration.allele_count2
+            maf = 1.0 - maf
+            mallele = iteration.major_allele
+            iteration.maj_allele = iteration.minor_allele
+            iteration.minor_allele = mallele
+        else:
+            iteration.min_allele_count = iteration.allele_count2
+            iteration.maj_allele_count = iteration.non_missing_alc - iteration.allele_count2
+        iteration._maf = maf
+        iteration.genotype_data = numpy.array(estimate)
+
+
+
+        plocus = AlleleCounts(genotypes)
+        plocus.het_count = numpy.sum(genotypes==1)
+        a1 = numpy.sum(genotypes==0) + plocus.het
+        a2 = numpy.sum(genotypes==2) + plocus.het
+
+        plocus.set_allele_counts(a1, a2, self.alleles)
+
     def get_effa_freq(self, genotypes):
         return numpy.mean(genotypes)/2
 
     def __iter__(self):
         """Reset the file and begin iteration"""
 
-        return ParsedLocus(self)
+        loc = ParsedLocus(self)
+        loc._extract_genotypes = gen_dosage_extraction
+        return loc

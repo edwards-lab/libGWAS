@@ -5,6 +5,7 @@ from parsed_locus import ParsedLocus
 from pheno_covar import PhenoCovar
 from exceptions import TooManyAlleles
 from exceptions import TooFewAlleles
+import allele_counts
 import gzip
 import numpy
 from exceptions import InvalidSelection
@@ -58,7 +59,26 @@ def SetEncoding(sval):
     else:
         raise InvalidSelection("Invalid encoding, %s, selected" % (sval))
 
+# Extract genotypes from raw genotypes (considering missing @ phenotype)
+# Convert genotypes to analyzable form if there is any need
 
+
+def gen_dosage_extraction(alleles, rawgeno, non_missing):
+
+    a1 = rawgeno[:, 0][non_missing]
+    het = rawgeno[:, 1][non_missing]
+    a2 = rawgeno[:, 2][non_missing]
+
+    # Additive
+    genotypes = het + (a2 * 2)
+    valid_pop = genotypes.shape[0]
+    hetc = int(sum(het) * valid_pop)
+    a1c = int(2 * sum(a1) * valid_pop) + hetc
+    a2c = int(2 * sum(a2) * valid_pop) + hetc
+
+    alc = allele_counts.AlleleCounts(genotypes, alleles)
+    alc.set_allele_counts(a1c, a2c)
+    return alc
 """
 ISSUES:
 * Beyond consideration for MVTest, is it typical to transform these frequencies into genotypes?
@@ -133,6 +153,8 @@ class Parser(DataParser):
 
         self.check_freq_header = True
 
+        self.geno_mask = None
+
     def ReportConfiguration(self):
         """
         :param file: Destination for report details
@@ -181,6 +203,7 @@ class Parser(DataParser):
         self.ind_mask[0:, 0] = mask_components
         self.ind_mask[0:, 1] = mask_components
         self.ind_count = self.ind_mask.shape[0]
+        self.geno_mask = self.ind_mask.reshape(self.ind_mask.shape[0], 1).repeat(3, axis=1)
         pheno_covar.freeze_subjects()
 
     def load_genotypes(self):
@@ -245,10 +268,15 @@ class Parser(DataParser):
             iteration.chr = self.current_chrom
             iteration.pos = int(iteration.pos)
             if DataParser.boundary.TestBoundary(iteration.chr, iteration.pos, iteration.rsid):
-                frequencies = []
+                # frequencies = []
                 idx = 5
-                total_maf = 0.0
-                additive = []
+                # total_maf = 0.0
+                # additive = []
+
+                iteration.genotype_data = numpy.ma.MaskedArray(line[idx:], self.geno_mask).compressed().reshape(-1, 3)
+                iteration.missing_genotypes = iteration.genotype_data[:, 0] == DataParser.missing_storage
+                return True
+                """
                 for is_ignored in self.ind_mask[:,0]:
                     if not is_ignored:
                         AA,Aa,aa = [float(x) for x in line[idx:idx+3]]
@@ -288,6 +316,7 @@ class Parser(DataParser):
                 iteration.genotype_data = numpy.array(frequencies)
 
                 return iteration.maf >= DataParser.min_maf and iteration.maf <= DataParser.max_maf
+                """
             else:
                 return False
         else:
@@ -296,4 +325,6 @@ class Parser(DataParser):
     def __iter__(self):
         """Reset the file and begin iteration"""
 
-        return ParsedLocus(self)
+        loc = ParsedLocus(self)
+        loc._extract_genotypes = gen_dosage_extraction
+        return loc
