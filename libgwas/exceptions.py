@@ -50,6 +50,35 @@ class TooManyAlleles(ReportableException):
             "%s %s:%s (%s) %s" %
             (prefix, self.chr, self.pos, self.rsid, self.alleles))
 
+class InvalidFrequency(ReportableException):
+    def __init__(self, chr=None, pos=None, rsid=None, maf=-1.0, almin=None, almaj=None, a2c=-1):
+
+        #: Chromosome
+        self.chr = chr
+
+        #: BP Position
+        self.pos = pos
+
+        #: RSID
+        self.rsid = rsid
+
+        #: Frequency that triggered issue
+        self.maf = maf
+
+        #: minor allele
+        self.minor_allele = almin
+
+        #: major allele
+        self.major_allele = almaj
+
+        #: allele 2 count
+        self.a2_count = a2c
+
+        super(InvalidFrequency, self).__init__(
+            "The locus %s:%s (%s) freq %0.6f is invalid" %
+            (self.chr, self.pos, self.rsid, self.maf)
+        )
+
 class NanInResult(ReportableException):
     """NaN found in result"""
     def __init__(self, msg = ""):
