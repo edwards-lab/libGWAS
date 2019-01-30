@@ -1,6 +1,7 @@
 from locus import Locus
 import allele_counts
 from exceptions import InvalidFrequency
+from exceptions import TooMuchMissing
 import data_parser
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
@@ -27,11 +28,11 @@ def default_geno_extraction(alleles, rawgeno, non_missing):
     genotypes = rawgeno[non_missing]
 
     het = sum(genotypes == 1)
-    a1c = (2 * sum(genotypes==0))
-    a2c = (2 * sum(genotypes==2))
+    a1c = (2 * sum(genotypes==0)) + het
+    a2c = (2 * sum(genotypes==2)) + het
 
     alc = allele_counts.AlleleCounts(genotypes, alleles)
-    alc.set_allele_counts(a1c, a2c)
+    alc.set_allele_counts(a1c, a2c, het)
     return alc
 
 
@@ -56,11 +57,25 @@ class ParsedLocus(Locus):
         #: Genotypes missing at locus as well as individuals marked to be ignored
         self.missing_genotypes = None       # True for 1 locus only
 
+        #: Used to filter the filtered individuals out at extraction
+        self.ind_mask =None
+
         self._extract_genotypes = default_geno_extraction
 
     def get_genotype_data(self, non_missing):
         """Return genotypes filtered by the missing phenotypes encapsulated in an AlleleCounts object"""
-        alc = self._extract_genotypes(self.alleles, self.genotype_data, non_missing)
+
+        if self.__datasource.alt_not_missing is not None:
+            not_missing = non_missing & self.__datasource.alt_not_missing
+        else:
+            not_missing = non_missing
+        alc = self._extract_genotypes(self.alleles, self.genotype_data, not_missing)
+        if alc.freq_missing > data_parser.DataParser.snp_miss_tol:
+            raise TooMuchMissing(chr=self.chr,
+                                 pos=self.pos,
+                                 rsid=self.rsid,
+                                 maf=alc.maf,
+                                 miss=alc.freq_missing)
         if alc.maf < data_parser.DataParser.min_maf or alc.maf > data_parser.DataParser.max_maf:
             raise InvalidFrequency(chr=self.chr,
                                    pos=self.pos,
