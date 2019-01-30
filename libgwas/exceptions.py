@@ -50,6 +50,28 @@ class TooManyAlleles(ReportableException):
             "%s %s:%s (%s) %s" %
             (prefix, self.chr, self.pos, self.rsid, self.alleles))
 
+class TooMuchMissing(ReportableException):
+    def __init__(self, chr=None, pos=None, rsid=None, maf=-1.0, miss=-1.0):
+
+        #: Chromosome
+        self.chr = chr
+
+        #: BP Position
+        self.pos = pos
+
+        #: RSID
+        self.rsid = rsid
+
+        #: Frequency that triggered issue
+        self.maf = maf
+
+        self.miss = miss
+
+        super(TooMuchMissing, self).__init__(
+            "The locus %s:%s (%s) miss freq %0.6f is too large" %
+            (self.chr, self.pos, self.rsid, self.miss)
+        )
+
 class InvalidFrequency(ReportableException):
     def __init__(self, chr=None, pos=None, rsid=None, maf=-1.0, almin=None, almaj=None, a2c=-1):
 
