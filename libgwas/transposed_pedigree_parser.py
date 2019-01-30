@@ -48,6 +48,12 @@ class Parser(DataParser):
 
         self.parser_name = self.name
 
+        #: Subjects dropped by user or don't match phenotype/covariate id list
+        self.ind_mask = None
+
+        #: Subjects dropped due to missing individual threshold
+        self.alt_not_missing = None
+
     def initialize(self, map3=None, pheno_covar=None):
         # Required for some parser types
 
@@ -171,34 +177,10 @@ class Parser(DataParser):
     def filter_missing(self):
         """Filter out individuals and SNPs that have too many missing to be considered"""
 
-        missing             = None
-        locus_count         = 0
+        missing = None
+        locus_count = 0
 
         # Filter out individuals according to missingness
-        self.genotype_file.seek(0)
-        for genotypes in self.genotype_file:
-            genotypes = genotypes.split()
-            chr, rsid, junk, pos = genotypes[0:4]
-            if DataParser.boundary.TestBoundary(chr, pos, rsid):
-                locus_count += 1
-                allelic_data = numpy.array(genotypes[4:], dtype="S2").reshape(-1, 2)
-                if missing is None:
-                    missing             = numpy.zeros(allelic_data.shape[0], dtype='int8')
-                missing += (numpy.sum(0+(allelic_data==DataParser.missing_representation), axis=1)/2)
-
-        max_missing = DataParser.ind_miss_tol * locus_count
-        dropped_individuals = 0+(max_missing<missing)
-
-        self.ind_mask[:,0] = self.ind_mask[:,0]|dropped_individuals
-        self.ind_mask[:,1] = self.ind_mask[:,1]|dropped_individuals
-
-        valid_individuals = numpy.sum(self.ind_mask[:, 0]==0)
-        max_missing = DataParser.snp_miss_tol * valid_individuals
-
-        self.locus_count = 0
-        # We can't merge these two iterations since we need to know which individuals
-        # to consider for filtering on MAF
-        dropped_snps = []
         self.genotype_file.seek(0)
         for genotypes in self.genotype_file:
             genotypes = genotypes.split()
@@ -206,14 +188,21 @@ class Parser(DataParser):
             chr = int(chr)
             pos = int(pos)
             if DataParser.boundary.TestBoundary(chr, pos, rsid):
-                allelic_data = numpy.ma.MaskedArray(numpy.array(genotypes[4:], dtype="S2").reshape(-1, 2), self.ind_mask).compressed()
-                missing = numpy.sum(0+(allelic_data==DataParser.missing_representation))
-                if missing > max_missing:
-                    DataParser.boundary.dropped_snps[int(chr)].add(int(pos))
-                    dropped_snps.append(rsid)
-                else:
-                    self.locus_count += 1
+                locus_count += 1
+                allelic_data = numpy.array(genotypes[4:], dtype="S2").reshape(-1, 2)
+                if missing is None:
+                    missing = numpy.zeros(allelic_data.shape[0], dtype='int8')
+                missing += (numpy.sum(0+(allelic_data==DataParser.missing_representation), axis=1)/2)
 
+        max_missing = DataParser.ind_miss_tol * locus_count
+        dropped_individuals = 0+(max_missing<missing)
+
+        if sum(dropped_individuals) > 0:
+            # This will be ORd, so it needs to be one for not
+            self.alt_not_missing = dropped_individuals != 1
+            self.alt_not_missing = self.alt_not_missing[self.ind_mask[0:, 0] != 1]
+
+        self.locus_count = locus_count
 
 
     def populate_iteration(self, iteration):
