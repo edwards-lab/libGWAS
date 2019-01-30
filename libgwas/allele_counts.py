@@ -1,4 +1,5 @@
-
+import numpy
+import data_parser
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"
@@ -42,12 +43,20 @@ class AlleleCounts(object):
         self.effa_freq = 0
 
         self.het_count = 0
+        self.missing = numpy.sum(genotypes == data_parser.DataParser.missing_storage)
 
+    @property
+    def hetero_freq(self):
+        return float(self.het_count) / (self.total_alleles/2)
 
-    def set_allele_counts(self, a1, a2):
+    @property
+    def freq_missing(self):
+        return self.missing / (self.total_alleles/2)
+
+    def set_allele_counts(self, a1, a2, het):
         self.a1_count = a1
         self.a2_count = a2
-
+        self.het_count = het
         self.total_alleles = (a1 + a2)
 
         self.effa_freq = a2 / float(self.total_alleles)
@@ -58,4 +67,5 @@ class AlleleCounts(object):
         else:
             self.maf = self.effa_freq
 
-
+    def __str__(self):
+        return " ".join([str(x) for x in [self.a1_count, self.a2_count, self.total_alleles, self.effa_freq, self.maf, self.minor_allele]])
