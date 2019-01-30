@@ -245,6 +245,8 @@ class Parser(DataParser):
         for locus in self.vcf_file:
             locus = locus.strip().split()
             chr, pos, rsid, ref, alt, qual, filter, info, format = locus[0:9]
+            chr = int(chr)
+            pos = int(pos)
             if DataParser.boundary.TestBoundary(chr, pos,rsid):
                 locus_count += 1
                 data = Parser.ExtractGenotypes(locus, format.split(":"))
