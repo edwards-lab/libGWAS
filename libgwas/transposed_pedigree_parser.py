@@ -171,7 +171,7 @@ class Parser(DataParser):
                 hetero_count,
                 maj_allele_count,
                 min_allele_count,
-                numpy.sum(missing_alleles),
+                missing_alleles,
                 effect_allele_count)
 
     def filter_missing(self):
@@ -201,7 +201,6 @@ class Parser(DataParser):
             # This will be ORd, so it needs to be one for not
             self.alt_not_missing = dropped_individuals != 1
             self.alt_not_missing = self.alt_not_missing[self.ind_mask[0:, 0] != 1]
-
         self.locus_count = locus_count
 
 
@@ -222,8 +221,9 @@ class Parser(DataParser):
                     iteration.hetero_count,
                     iteration.maj_allele_count,
                     iteration.min_allele_count,
-                    iteration.missing_allele_count,
+                    iteration.missing_genotypes,
                     iteration.allele_count2] = self.process_genotypes(genotypes)
+                iteration.missing_allele_count = numpy.sum(iteration.missing_genotypes)
                 return iteration.maf >= DataParser.min_maf and iteration.maf <= DataParser.max_maf
             except TooFewAlleles:
                 print "\n\n\nSkipping %s:%s %s %s" % (iteration.chr, iteration.pos, iteration.rsid, cur_idx)

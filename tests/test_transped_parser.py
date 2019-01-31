@@ -169,18 +169,18 @@ class TestPedFilesTPedIndExclusions(TestBase):
 
         index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covariates, nonmissing) = y.get_variables(snp.missing_genotypes)
-
-                try:
-                    genodata = snp.get_genotype_data(nonmissing)
-                    self.assertEqual(int(mapdata[index][0]), snp.chr)
-                    self.assertEqual(int(mapdata[index][3]), snp.pos)
-                    self.assertEqual(mapdata[index][1], snp.rsid)
-                    self.assertEqual(genotypes[index], list(genodata.genotypes))
-                    index += 1
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(mapdata[index][0]), snp.chr)
+                self.assertEqual(int(mapdata[index][3]), snp.pos)
+                self.assertEqual(mapdata[index][1], snp.rsid)
+                self.assertEqual(genotypes[index], list(genodata.genotypes))
+                index += 1
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
         self.assertEqual(7, index)
 
     def testRegionBoundaryWithExclusions(self):
@@ -204,17 +204,18 @@ class TestPedFilesTPedIndExclusions(TestBase):
         mapdata = [x.strip().split() for x in open(self.tped_filename).readlines()]
         index = 4
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covariates, nonmissing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(nonmissing)
-                    self.assertEqual(int(mapdata[index][0]), snp.chr)
-                    self.assertEqual(int(mapdata[index][3]), snp.pos)
-                    self.assertEqual(mapdata[index][1], snp.rsid)
-                    self.assertEqual(genotypes[index], list(genodata.genotypes))
-                    index += 1
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(mapdata[index][0]), snp.chr)
+                self.assertEqual(int(mapdata[index][3]), snp.pos)
+                self.assertEqual(mapdata[index][1], snp.rsid)
+                self.assertEqual(genotypes[index], list(genodata.genotypes))
+                index += 1
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
         self.assertEqual(7, index)
 
 
@@ -238,21 +239,20 @@ class TestPedFilesTPedIndExclusions(TestBase):
 
         mapdata = [x.strip().split() for x in open(self.miss_tped_filename).readlines()]
 
-        index = 1
+        index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covariates, nonmissing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(nonmissing)
-                    self.assertEqual(int(mapdata[index][0]), snp.chr)
-                    self.assertEqual(int(mapdata[index][3]), snp.pos)
-                    self.assertEqual(mapdata[index][1], snp.rsid)
-                    self.assertEqual(genotypes_w_missing[index], list(genodata.genotypes))
-                    index += 1
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(mapdata[index][0]), snp.chr)
+                self.assertEqual(int(mapdata[index][3]), snp.pos)
+                self.assertEqual(mapdata[index][1], snp.rsid)
+                self.assertEqual(genotypes_w_missing[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
+            index += 1
         self.assertEqual(7, index)
 
     def testPedWithMissingMxIndExclusionsToo(self):
@@ -280,20 +280,18 @@ class TestPedFilesTPedIndExclusions(TestBase):
         non_missing[1] = False
         non_missing[2] = False
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covariates, nonmissing) = y.get_variables(snp.missing_genotypes)
-
-                try:
-                    genodata = snp.get_genotype_data(nonmissing)
-                    self.assertEqual(int(mapdata[index][0]), snp.chr)
-                    self.assertEqual(int(mapdata[index][3]), snp.pos)
-                    self.assertEqual(mapdata[index][1], snp.rsid)
-                    self.assertEqual(genotypes_w_missing[index], list(genodata.genotypes))
-                    index += 1
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(mapdata[index][0]), snp.chr)
+                self.assertEqual(int(mapdata[index][3]), snp.pos)
+                self.assertEqual(mapdata[index][1], snp.rsid)
+                self.assertEqual(genotypes_w_missing[index], list(genodata.genotypes))
+                index += 1
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
         self.assertEqual(7, index)
 
 class TestPedFilesTPed(TestBase):
@@ -310,20 +308,18 @@ class TestPedFilesTPed(TestBase):
 
         index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covariates, nonmissing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(nonmissing)
-                    self.assertEqual(int(mapdata[index][0]), snp.chr)
-                    self.assertEqual(int(mapdata[index][3]), snp.pos)
-                    self.assertEqual(mapdata[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
-
-            index += 1
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(mapdata[index][0]), snp.chr)
+                self.assertEqual(int(mapdata[index][3]), snp.pos)
+                self.assertEqual(mapdata[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+                index += 1
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
         self.assertEqual(7, index)
 
     def testTPedPhenoComplete(self):
@@ -342,19 +338,18 @@ class TestPedFilesTPed(TestBase):
         index = 0
         self.assertEqual(7, ped_parser.locus_count)
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covariates, nonmissing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(nonmissing)
-                    self.assertEqual(int(mapdata[index][0]), snp.chr)
-                    self.assertEqual(int(mapdata[index][3]), snp.pos)
-                    self.assertEqual(mapdata[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
-            index += 1
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(mapdata[index][0]), snp.chr)
+                self.assertEqual(int(mapdata[index][3]), snp.pos)
+                self.assertEqual(mapdata[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+                index += 1
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
         self.assertEqual(7, index)
 
     # Test to make sure we can load everything
@@ -367,21 +362,28 @@ class TestPedFilesTPed(TestBase):
         mapdata = [x.strip().split() for x in open(self.miss_tped_filename).readlines()]
 
         self.assertEqual(7, ped_parser.locus_count)
-
+        genotypes_w_missing = [
+            [0, 1],
+            [1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
+            [0, 1, 1, 0, 0, 0, 2, 1, 1, 0, 0],
+            [0, 2, 1, 1, 0, 0, 1, 2, 1, 1, 0],
+            [1, 0, 1, 0, 0, 1, 2, 0, 1, 0, 0],
+            [1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0]
+        ]
         index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno,covars,non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(mapdata[index][0]), snp.chr)
-                    self.assertEqual(int(mapdata[index][3]), snp.pos)
-                    self.assertEqual(mapdata[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes_w_missing[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(mapdata[index][0]), snp.chr)
+                self.assertEqual(int(mapdata[index][3]), snp.pos)
+                self.assertEqual(mapdata[index][1], snp.rsid)
+                self.assertEqual(genotypes_w_missing[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(7, index)
 
@@ -415,18 +417,18 @@ class TestPedFilesTPed(TestBase):
 
         index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno,covars,non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(mapdata[index][0]), snp.chr)
-                    self.assertEqual(int(mapdata[index][3]), snp.pos)
-                    self.assertEqual(mapdata[index][1], snp.rsid)
-                    self.assertEqual(genotypes_w_missing[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(mapdata[index][0]), snp.chr)
+                self.assertEqual(int(mapdata[index][3]), snp.pos)
+                self.assertEqual(mapdata[index][1], snp.rsid)
+                self.assertEqual(genotypes_w_missing[index], list(genodata.genotypes))
+
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(7, index)
 
@@ -441,13 +443,13 @@ class TestPedFilesTPed(TestBase):
         mapdata = [x.strip().split() for x in open(self.miss_tped_filename).readlines()]
 
         genotypes_w_missing = [
-            [0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0],
-            [1,  1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
-            [0, -1, 1, 1, 0, 0, 0, 2, 1, 1, 0, 0],
-            [0, -1, 2, 1, 1, 0, 0, 1, 2, 1, 1, 0],
-            [1, -1, 0, 1, 0, 0, 1, 2, 0, 1, 0, 0],
-            [1, -1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
-            [0, -1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0]
+            [0, 0],
+            [1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
+            [0, 1, 1, 0, 0, 0, 2, 1, 1, 0, 0],
+            [0, 2, 1, 1, 0, 0, 1, 2, 1, 1, 0],
+            [1, 0, 1, 0, 0, 1, 2, 0, 1, 0, 0],
+            [1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0]
 
         ]
 
@@ -461,22 +463,21 @@ class TestPedFilesTPed(TestBase):
             self.assertEqual(int(mapdata[index][3]), snp.pos)
             index += 1
 
-        index = 1
+        index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(mapdata[index][0]), snp.chr)
-                    self.assertEqual(int(mapdata[index][3]), snp.pos)
-                    self.assertEqual(mapdata[index][1], snp.rsid)
-                    self.assertAlmostEqual(hetero_freq_tped[index], genodata.hetero_freq, places=4)
-                    self.assertEqual(genotypes_w_missing[index], list(genodata.genotypes))
-                    index += 1
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(mapdata[index][0]), snp.chr)
+                self.assertEqual(int(mapdata[index][3]), snp.pos)
+                self.assertEqual(mapdata[index][1], snp.rsid)
+                self.assertAlmostEqual(hetero_freq_tped[index], genodata.hetero_freq, places=4)
+                self.assertEqual(genotypes_w_missing[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
+            index += 1
         self.assertEqual(7, index)
 
     # Test to make sure we can load everything
@@ -510,20 +511,18 @@ class TestPedFilesTPed(TestBase):
         self.assertEqual(7, ped_parser.locus_count)
         index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-
-                    self.assertEqual(int(mapdata[index][0]), snp.chr)
-                    self.assertEqual(int(mapdata[index][3]), snp.pos)
-                    self.assertEqual(mapdata[index][1], snp.rsid)
-                    self.assertAlmostEqual(hetero_freq_tped[index], genodata.hetero_freq, places=4)
-                    self.assertEqual(genotypes_w_missing[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(mapdata[index][0]), snp.chr)
+                self.assertEqual(int(mapdata[index][3]), snp.pos)
+                self.assertEqual(mapdata[index][1], snp.rsid)
+                self.assertAlmostEqual(hetero_freq_tped[index], genodata.hetero_freq, places=4)
+                self.assertEqual(genotypes_w_missing[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(7, index)
 
@@ -550,19 +549,18 @@ class TestPedFilesTPed(TestBase):
         self.assertEqual(3, ped_parser.locus_count)
         index = 4
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertAlmostEqual(self.hetero_freq_tped[index], genodata.hetero_freq, places=4)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertAlmostEqual(self.hetero_freq_tped[index], genodata.hetero_freq, places=4)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(7, index)
 
@@ -584,19 +582,18 @@ class TestPedFilesTPed(TestBase):
         self.assertEqual(3, ped_parser.locus_count)
         index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertAlmostEqual(self.hetero_freq_tped[index], genodata.hetero_freq, places=4)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertAlmostEqual(self.hetero_freq_tped[index], genodata.hetero_freq, places=4)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(3, index)
 
@@ -619,19 +616,18 @@ class TestPedFilesTPed(TestBase):
         self.assertEqual(2, ped_parser.locus_count)
         index = 4
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertAlmostEqual(self.hetero_freq_tped[index], genodata.hetero_freq, places=4)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertAlmostEqual(self.hetero_freq_tped[index], genodata.hetero_freq, places=4)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(6, index)
 
@@ -654,18 +650,17 @@ class TestPedFilesTPed(TestBase):
             index += 1
         index = 4
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
 
             index += 1
         self.assertEqual(6, index)
@@ -689,18 +684,17 @@ class TestPedFilesTPed(TestBase):
             index += 1
         index = 4
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(6, index)
 class TestPedFilesTPedVariedColumns(TestBase):
@@ -789,18 +783,17 @@ class TestPedFilesTPedVariedColumns(TestBase):
 
         index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(7, index)
 
@@ -831,18 +824,17 @@ class TestPedFilesTPedVariedColumns(TestBase):
 
         index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(7, index)
 
@@ -873,18 +865,17 @@ class TestPedFilesTPedVariedColumns(TestBase):
 
         index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(7, index)
 
@@ -915,18 +906,17 @@ class TestPedFilesTPedVariedColumns(TestBase):
 
         index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(7, index)
 
@@ -962,18 +952,17 @@ class TestPedFilesTPedVariedColumns(TestBase):
 
         index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
 
             index += 1
         self.assertEqual(7, index)
@@ -1007,18 +996,17 @@ class TestPedFilesTPedVariedColumns(TestBase):
 
         index = 0
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(7, index)
 
@@ -1034,18 +1022,17 @@ class TestTPedFileNegPos(TestBase):
 
         index = 2
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(7, index)
 
@@ -1060,18 +1047,17 @@ class TestTPedFileNegPos(TestBase):
 
         index = 4
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
 
         self.assertEqual(7, index)
@@ -1087,18 +1073,17 @@ class TestTPedFileNegPos(TestBase):
 
         index = 2
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(4, index)
 
@@ -1115,18 +1100,17 @@ class TestTPedFileNegPos(TestBase):
 
         index = 2
         for snp in ped_parser:
-            for y in pc:
-                (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
-                try:
-                    genodata = snp.get_genotype_data(non_missing)
-                    self.assertEqual(int(pedigree[index][0]), snp.chr)
-                    self.assertEqual(int(pedigree[index][3]), snp.pos)
-                    self.assertEqual(pedigree[index][1], snp.rsid)
-                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                except TooMuchMissing as e:
-                    pass
-                except InvalidFrequency as e:
-                    pass
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(int(pedigree[index][0]), snp.chr)
+                self.assertEqual(int(pedigree[index][3]), snp.pos)
+                self.assertEqual(pedigree[index][1], snp.rsid)
+                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                pass
             index += 1
         self.assertEqual(3, index)
 

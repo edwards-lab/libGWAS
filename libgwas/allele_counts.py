@@ -30,7 +30,7 @@ class AlleleCounts(object):
            for analysis
     """
 
-    def __init__(self, genotypes, alleles):
+    def __init__(self, genotypes, alleles, non_missing):
         self.genotypes = genotypes
         self.effa_freq = None
         self.a1_count = 0
@@ -43,7 +43,7 @@ class AlleleCounts(object):
         self.effa_freq = 0
 
         self.het_count = 0
-        self.missing = numpy.sum(genotypes == data_parser.DataParser.missing_storage)
+        self.missing = numpy.sum(non_missing==0)
 
     @property
     def hetero_freq(self):

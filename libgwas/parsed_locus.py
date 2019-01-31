@@ -31,7 +31,7 @@ def default_geno_extraction(alleles, rawgeno, non_missing):
     a1c = (2 * sum(genotypes==0)) + het
     a2c = (2 * sum(genotypes==2)) + het
 
-    alc = allele_counts.AlleleCounts(genotypes, alleles)
+    alc = allele_counts.AlleleCounts(genotypes, alleles, non_missing)
     alc.set_allele_counts(a1c, a2c, het)
     return alc
 
@@ -64,11 +64,10 @@ class ParsedLocus(Locus):
 
     def get_genotype_data(self, non_missing):
         """Return genotypes filtered by the missing phenotypes encapsulated in an AlleleCounts object"""
-
+        not_missing = ~self.missing_genotypes & non_missing
         if self.__datasource.alt_not_missing is not None:
-            not_missing = non_missing & self.__datasource.alt_not_missing
-        else:
-            not_missing = non_missing
+            not_missing = not_missing & self.__datasource.alt_not_missing
+
         alc = self._extract_genotypes(self.alleles, self.genotype_data, not_missing)
         if alc.freq_missing > data_parser.DataParser.snp_miss_tol:
             raise TooMuchMissing(chr=self.chr,
