@@ -22,6 +22,9 @@ class ReportableException(Exception):
     def __init__(self, msg):
         self.msg = msg
 
+    def __str__(self):
+        return msg
+
 
 class UnsolvedLocus(ReportableException):
     def __init__(self, msg):
