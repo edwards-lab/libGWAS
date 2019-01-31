@@ -88,6 +88,23 @@ class TestBase(unittest.TestCase):
 
 
         f.close()
+        self.pheno_values = [0.1, 0.4, 1.0, 0.5, 0.9, 1.0, 0.1, 0.4, 1.0, 0.5, 0.9, 1.0]
+
+        self.tfam_missing = "%s_miss.tfam" % (prefix)
+        f = open(self.tfam_missing, 'w')
+        f.write("""1 1 0 0 1 -9
+2 2 0 0 1 0.4
+3 3 0 0 2 1.0
+4 4 0 0 2 0.5
+5 5 0 0 1 0.9
+6 6 0 0 1 1.0
+7 7 0 0 1 0.1
+8 8 0 0 1 0.4
+9 9 0 0 2 1.0
+10 10 0 0 2 0.5
+11 11 0 0 1 0.9
+12 12 0 0 -9 1.0""")
+        self.filenames.append(self.tfam_missing)
 
         self.tped_filename = "%s.tped" % (prefix)
         self.filenames.append(self.tped_filename)
@@ -322,6 +339,47 @@ class TestPedFilesTPed(TestBase):
                 pass
         self.assertEqual(7, index)
 
+    def testTPedPhenoMissingPC(self):
+        PhenoCovar.sex_as_covariate = True
+        pc = PhenoCovar()
+        ped_parser = TransposedPedigreeParser(self.tfam_missing, self.tped_filename)
+
+        ped_parser.load_tfam(pc)
+        ped_parser.load_genotypes()
+
+        self.assertEqual(12, len(pc.covariate_data[0]))
+        self.assertEqual(12, len(pc.phenotype_data[0]))
+        self.assertEqual(1, len(pc.phenotype_names))
+        mapdata = [x.strip().split() for x in open(self.tped_filename).readlines()]
+        self.genotypes = [
+            [1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
+            [1, 0, 0, 0, 1, 1, 1, 0, 0, 0],
+            [2, 1, 1, 0, 0, 0, 2, 1, 1, 0],
+            [1, 2, 1, 1, 0, 0, 1, 2, 1, 1],
+            [2, 0, 1, 0, 0, 1, 2, 0, 1, 0],
+            [0, 1, 0, 0, 0, 0, 0, 1, 0, 0],
+            [1, 1, 0, 0, 0, 0, 1, 1, 0, 0]
+        ]
+        pheno_values = [0.4, 1.0, 0.5, 0.9, 1.0, 0.1, 0.4, 1.0, 0.5, 0.9]
+        index = 0
+        self.assertEqual(7, ped_parser.locus_count)
+        for snp in ped_parser:
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                self.assertAlmostEqual(pheno_values, list(pheno), places=4)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(int(mapdata[index][0]), snp.chr)
+                    self.assertEqual(int(mapdata[index][3]), snp.pos)
+                    self.assertEqual(mapdata[index][1], snp.rsid)
+                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
+            index += 1
+        self.assertEqual(7, index)
+
     def testTPedPhenoComplete(self):
         PhenoCovar.sex_as_covariate = True
         pc = PhenoCovar()
@@ -338,18 +396,21 @@ class TestPedFilesTPed(TestBase):
         index = 0
         self.assertEqual(7, ped_parser.locus_count)
         for snp in ped_parser:
-            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
-            try:
-                genodata = snp.get_genotype_data(snp_filter)
-                self.assertEqual(int(mapdata[index][0]), snp.chr)
-                self.assertEqual(int(mapdata[index][3]), snp.pos)
-                self.assertEqual(mapdata[index][1], snp.rsid)
-                self.assertEqual(self.genotypes[index], list(genodata.genotypes))
-                index += 1
-            except TooMuchMissing as e:
-                pass
-            except InvalidFrequency as e:
-                pass
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                self.assertAlmostEqual(self.pheno_values, list(pheno), places=4)
+
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(int(mapdata[index][0]), snp.chr)
+                    self.assertEqual(int(mapdata[index][3]), snp.pos)
+                    self.assertEqual(mapdata[index][1], snp.rsid)
+                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
+            index += 1
         self.assertEqual(7, index)
 
     # Test to make sure we can load everything
