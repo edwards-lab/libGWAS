@@ -136,6 +136,8 @@ class Parser(DataParser):
             if BoundaryCheck.chrom != -1 and os.path.isfile("%s.tbi" % (filename)):
                 self.indexed = True
 
+        #: Subjects dropped due to missing individual threshold
+        self.alt_not_missing = None
         self.reset()
 
     def initialize(self, map3=None, pheno_covar=None):
@@ -166,7 +168,7 @@ class Parser(DataParser):
             # Validate subjects by inclusion/exclusion criterion
             if DataParser.valid_indid(id):
                 mask_components.append(0)
-                pheno_covar.add_subject(id, None, None)
+                pheno_covar.add_subject(id, phenotype=pheno_covar.missing_encoding)
             else:
                 mask_components.append(1)
 
@@ -257,29 +259,12 @@ class Parser(DataParser):
         max_missing = DataParser.ind_miss_tol * locus_count
         dropped_individuals = 0+(max_missing<missing)
 
-        self.ind_mask = self.ind_mask | dropped_individuals
-        valid_individuals = numpy.sum(self.ind_mask==0)
+        if sum(dropped_individuals) > 0:
+            # This will be ORd, so it needs to be one for not
+            self.alt_not_missing = dropped_individuals != 1
+            self.alt_not_missing = self.alt_not_missing[self.ind_mask != 1]
 
-        self.locus_count = 0
-        dropped_snps = []
-
-        max_missing = DataParser.snp_miss_tol * float(valid_individuals)
-        self.reset()
-        for locus in self.vcf_file:
-            locus = locus.strip().split()
-            chr, pos, rsid, ref, alt, qual, filter, info, format = locus[0:9]
-            chr = int(chr)
-            pos = int(pos)
-            if DataParser.boundary.TestBoundary(chr, pos, rsid):
-                geno = Parser.ExtractGenotypes(locus, format.split(":"))
-                allelic_data = numpy.ma.MaskedArray(geno.genotypes,
-                                    self.ind_mask).compressed()
-                missing = numpy.sum(allelic_data==DataParser.missing_storage)
-                if missing > max_missing:
-                    DataParser.boundary.dropped_snps[chr].add(pos)
-                    dropped_snps.append(rsid)
-                else:
-                    self.locus_count += 1
+        self.locus_count = locus_count
         self.reset()
     def populate_iteration(self, iteration):
         cur_idx = iteration.cur_idx
@@ -295,6 +280,7 @@ class Parser(DataParser):
             filter, \
             info, \
             format = locus[0:9]
+
         iteration.chr = int(iteration.chr)
         iteration.pos = int(iteration.pos)
         alleles = [iteration.ref, iteration.alt]
@@ -308,6 +294,7 @@ class Parser(DataParser):
                 iteration.hetero_counts = geno.het_counts
                 iteration.missing_allele_count = geno.missing
                 iteration.allele_count2 = allele_counts[1]
+                iteration.missing_genotypes = iteration.genotype_data == DataParser.missing_storage
                 iteration.effa_freq = geno.maf()
                 if allele_counts[0] < allele_counts[1]:
                     allele_counts = [allele_counts[1], allele_counts[0]]
