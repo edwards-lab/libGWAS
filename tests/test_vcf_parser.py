@@ -18,6 +18,7 @@ from libgwas.snp_boundary_check import SnpBoundaryCheck
 from pkg_resources import resource_filename
 from libgwas.exceptions import InvalidFrequency
 from libgwas.exceptions import TooMuchMissing
+from libgwas.exceptions import TooMuchMissingpPhenoCovar
 import numpy
 
 class TestBase(unittest.TestCase):
@@ -489,5 +490,35 @@ class TestVcfFiles(TestBase):
 
             index += 1
         self.assertEqual(7, index)
+
+    def testEmptyPhenoCovar(self):
+        pc = PhenoCovar()
+
+        pc = PhenoCovar()
+        parser = Parser(self.missing, data_field='GT')
+        parser.init_subjects(pc)
+        parser.load_genotypes()
+
+        index = 0
+        missing_count = 0
+        self.assertEqual(7, parser.locus_count)
+
+        for snp in parser:
+            for y in pc:
+                try:
+                    (pheno, covars, non_missing) = y.get_variables(snp.missing_genotypes)
+                    genodata = snp.get_genotype_data(non_missing)
+                    self.assertEqual(int(self.nonmissing_mapdata[index][0]), snp.chr)
+                    self.assertEqual(int(self.nonmissing_mapdata[index][1]), snp.pos)
+                    self.assertEqual(self.nonmissing_mapdata[index][2], snp.rsid)
+                    self.assertEqual(self.genotypes[index], list(genodata.genotypes))
+                except TooMuchMissingpPhenoCovar as e:
+                    missing_count += 1
+                    self.assertAlmostEqual(1.0, e.pct, places=4)
+                except InvalidFrequency as e:
+                    pass
+                index += 1
+        self.assertEqual(7, index)
+        self.assertEqual(7, missing_count)
 if __name__ == "__main__":
     unittest.main()
