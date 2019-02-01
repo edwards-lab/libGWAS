@@ -51,6 +51,7 @@ class Parser(DataParser):
         self.mapfile = mapfile
         #: Filename for the actual pedigree information
         self.datasource = datasource
+        #: List of valid Locus Objects
         self.markers = []
         #: Matrix of genotype data
         self.genotypes = []
@@ -64,8 +65,6 @@ class Parser(DataParser):
         self.snp_mask = None
         #: Number of valid loci
         self.locus_count = None
-        #: List of valid Locus Objects
-        self.markers = None
         #: List of both alleles for each valid locus
         alleles = None
         #: List of all SNP names for valid loci
@@ -272,19 +271,11 @@ class Parser(DataParser):
             genotype_data = numpy.sum(snp_geno == alleles[1], axis=1)
             # Correct the missing stuff, since those will have summed up to be nonsense
             genotype_data[snp_geno[:, 0] == DataParser.missing_representation] = DataParser.missing_storage
-            missing = numpy.sum(genotype_data == DataParser.missing_storage)
-            if max_missing_individuals < missing:
-                locus_details = self.markers[i]
-                DataParser.boundary.dropped_snps[
-                    locus_details[0]].add(locus_details[1])
-                dropped_loci.append("%s:%s" % (locus_details[0],
-                                               locus_details[1]))
-                self.invalid_loci.append(i)
-            else:
-                self.genotypes[valid_snps, :] = genotype_data
-                valid_snps += 1
-                valid_markers.append(list(self.markers[i]))
-                valid_rsids.append(self.rsids[i])
+
+            self.genotypes[valid_snps, :] = genotype_data
+            valid_snps += 1
+            valid_markers.append(list(self.markers[i]))
+            valid_rsids.append(self.rsids[i])
 
         self.markers = valid_markers
         self.rsids   = valid_rsids
