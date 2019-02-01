@@ -52,11 +52,16 @@ class StandardizedVariable(object):
         #: standardized phenotype data
         self.phenotypes = None
 
+
+        phidx=0
         for pheno in pc.phenotype_data:
+            if pheno.shape[0] == 0:
+                raise TooMuchMissingpPhenoCovar("Pheno", 1.0)
             missing = pheno == pheno_covar.PhenoCovar.missing_encoding
             for idx in range(0, self.covar_count):
                 missing = missing | (pc.covariate_data[idx] == pheno_covar.PhenoCovar.missing_encoding)
             self.missing.append(missing)
+            phidx+=1
         #: index of the current phenotype
         self.idx = 0
         #: Reference back to the pheno_covar object for access to raw data
@@ -81,6 +86,7 @@ class StandardizedVariable(object):
 
         if nmcount == 0:
             raise TooMuchMissingpPhenoCovar(self.datasource.phenotype_names[self.idx], 1.0)
+
         covars = numpy.zeros((self.covar_count, nmcount))
         for idx in range(0, self.covar_count):
             covars[idx] = self.covariates[idx][nonmissing]
