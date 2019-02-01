@@ -23,8 +23,10 @@ class ReportableException(Exception):
         self.msg = msg
 
     def __str__(self):
-        return msg
+        return self.msg
 
+    def __repr__(self):
+        return self.msg
 
 class UnsolvedLocus(ReportableException):
     def __init__(self, msg):
@@ -52,6 +54,19 @@ class TooManyAlleles(ReportableException):
         super(TooManyAlleles, self).__init__(
             "%s %s:%s (%s) %s" %
             (prefix, self.chr, self.pos, self.rsid, self.alleles))
+
+class TooMuchMissingpPhenoCovar(ReportableException):
+    def __init__(self, pheno_name, missing_pct):
+
+        #: Index of the pheno
+        self.name = pheno_name
+
+        #: Missing Percentag
+        self.pct = missing_pct
+
+        msg = "The phenotype %s has too much missing (%.4f)" % (self.name, self.pct)
+        super(TooMuchMissingpPhenoCovar, self).__init__(msg)
+
 
 class TooMuchMissing(ReportableException):
     def __init__(self, chr=None, pos=None, rsid=None, maf=-1.0, miss=-1.0):
