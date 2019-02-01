@@ -5,6 +5,7 @@ import numpy
 from data_parser import DataParser
 from exceptions import MalformedInputFile
 from exceptions import TooManyAlleles
+from exceptions import TooFewAlleles
 from . import sys_call
 from . import BuildReportLine
 from pheno_covar import PhenoCovar
@@ -72,6 +73,8 @@ class Parser(DataParser):
         #: List of MAF at each locus
         markers_maf = None
 
+        #: Subjects dropped due to missing individual threshold
+        self.alt_not_missing = None
         #: Name used for reporting information about this dataset
         self.name = datasource.split("/")[-1].split(".")[0]
         self.parser_name = self.name
@@ -248,8 +251,9 @@ class Parser(DataParser):
 
         for i in xrange(0, snp_count):
             snp_geno = allelic_data[:,i]
-            alleles = list(set(numpy.unique(snp_geno)) -
-                           set([DataParser.missing_representation]))
+            alleles, allele_counts = numpy.unique(snp_geno, return_counts=True)
+            allele_counts = dict(zip(alleles, allele_counts))
+            alleles = list(set(alleles) - set([DataParser.missing_representation]))
 
             if len(alleles) > 2:
                 raise TooManyAlleles(chr=self.markers[i][0],
@@ -260,9 +264,14 @@ class Parser(DataParser):
                                     rsid=self.rsids[i],
                                     alleles=alleles)
 
+            # Let's order the genotypes according to allele freq
+            #print i, alleles, allele_counts
+            if allele_counts[alleles[0]] < allele_counts[alleles[1]]:
+                alleles = [alleles[1], alleles[0]]
+
             genotype_data = numpy.sum(snp_geno == alleles[1], axis=1)
             # Correct the missing stuff, since those will have summed up to be nonsense
-            genotype_data[snp_geno[:, 0] == DataParser.missing_representation] = DataPrser.missing_storage
+            genotype_data[snp_geno[:, 0] == DataParser.missing_representation] = DataParser.missing_storage
             missing = numpy.sum(genotype_data == DataParser.missing_storage)
             if max_missing_individuals < missing:
                 locus_details = self.markers[i]
