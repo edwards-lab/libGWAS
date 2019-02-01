@@ -3,6 +3,7 @@ import numpy
 import pheno_covar
 
 from exceptions import InvariantVar
+from exceptions import TooMuchMissingpPhenoCovar
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -77,9 +78,13 @@ class StandardizedVariable(object):
         else:
             nonmissing = numpy.invert(self.missing[self.idx] | missing_in_geno)
         nmcount = sum(nonmissing)
+
+        if nmcount == 0:
+            raise TooMuchMissingpPhenoCovar(self.datasource.phenotype_names[self.idx], 1.0)
         covars = numpy.zeros((self.covar_count, nmcount))
         for idx in range(0, self.covar_count):
             covars[idx] = self.covariates[idx][nonmissing]
+
             min = covars[idx][covars[idx] != pheno_covar.PhenoCovar.missing_encoding].min()
             max = covars[idx][covars[idx] != pheno_covar.PhenoCovar.missing_encoding].max()
             if min == max:
