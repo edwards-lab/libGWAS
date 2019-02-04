@@ -64,20 +64,46 @@ def SetEncoding(sval):
 
 
 def gen_dosage_extraction(alleles, rawgeno, non_missing):
+    global encoding
+    a1 = (rawgeno[:, 0][non_missing]).astype('float64')
+    het = rawgeno[:, 1][non_missing].astype('float64')
+    a2 = rawgeno[:, 2][non_missing].astype('float64')
 
-    a1 = rawgeno[:, 0][non_missing]
-    het = rawgeno[:, 1][non_missing]
-    a2 = rawgeno[:, 2][non_missing]
 
-    # Additive
-    genotypes = het + (a2 * 2)
-    valid_pop = genotypes.shape[0]
+    valid_pop = a1.shape[0]
     hetc = int(sum(het) * valid_pop)
     a1c = int(2 * sum(a1) * valid_pop) + hetc
     a2c = int(2 * sum(a2) * valid_pop) + hetc
+    alc = None
+    additive = het + (a2 * 2)
+    # Additive
+    if encoding == Encoding.Additive:
+        genotypes = additive
 
-    alc = allele_counts.AlleleCounts(genotypes, alleles)
-    alc.set_allele_counts(a1c, a2c)
+    elif encoding == Encoding.Dominant:
+        genotypes = het + a2
+                
+    elif encoding == Encoding.Recessive:
+        genotypes = a2
+    
+    elif encoding == Encoding.Genotype:
+        if a1c > a2c:
+            a0_mask = (a1 > a2) & (a1 > het)
+            a1_mask = (a2 > a1) & (a2 > het)
+        else:
+            a0_mask = (a2 > a1) & (a2 > het)
+            a1_mask = (a1 > a2) & (a1 > het)
+
+        ht_mask = (het > a1) & (het > a2)
+        genotypes = numpy.zeros(a1.shape[0], dtype='int8')
+        genotypes[ht_mask] = 1
+        genotypes[a1_mask] = 2
+
+    else:
+        print "unexpected encoding: ", encoding
+        sys.exit(1)
+    alc = allele_counts.AlleleCounts(genotypes, alleles, non_missing)
+    alc.set_allele_counts(a1c, a2c, hetc, sum(additive/2)/float(a1.shape[0]))
     return alc
 """
 ISSUES:
@@ -155,6 +181,8 @@ class Parser(DataParser):
 
         self.geno_mask = None
 
+        self.alt_not_missing = None
+
     def ReportConfiguration(self):
         """
         :param file: Destination for report details
@@ -199,10 +227,9 @@ class Parser(DataParser):
             else:
                 mask_components.append(1)
         mask_components = numpy.array(mask_components)
-        self.ind_mask = numpy.zeros(len(mask_components) * 2, dtype=numpy.int8).reshape(-1, 2)
-        self.ind_mask[0:, 0] = mask_components
-        self.ind_mask[0:, 1] = mask_components
-        self.ind_count = self.ind_mask.shape[0]
+        #self.ind_mask = numpy.zeros(len(mask_components), dtype=numpy.int8).reshape(-1, 2)
+        self.ind_mask = numpy.array(mask_components, dtype=numpy.int8)
+        self.ind_count = sum(self.ind_mask == 0)
         self.geno_mask = self.ind_mask.reshape(self.ind_mask.shape[0], 1).repeat(3, axis=1)
         pheno_covar.freeze_subjects()
 
@@ -273,7 +300,7 @@ class Parser(DataParser):
                 # total_maf = 0.0
                 # additive = []
 
-                iteration.genotype_data = numpy.ma.MaskedArray(line[idx:], self.geno_mask).compressed().reshape(-1, 3)
+                iteration.genotype_data = numpy.ma.MaskedArray(line[idx:], self.geno_mask).compressed().reshape(-1, 3).astype('float64')
                 iteration.missing_genotypes = iteration.genotype_data[:, 0] == DataParser.missing_storage
                 return True
                 """
