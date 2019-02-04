@@ -189,9 +189,18 @@ class TestBGenBasics(TestBase):
         parser.load_genotypes()
         idx = 0
         for snp in parser:
-            self.assertEqual(self.positions[idx], snp.pos)
-            for ind in range(snp.genotype_data.shape[0]):
-                self.assertAlmostEqual(self.additive_encoding[idx][ind], snp.genotype_data[ind], places=4)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+                    genodata = snp.get_genotype_data(snp_filter)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    for ind in range(snp.genotype_data.shape[0]):
+                        self.assertAlmostEqual(self.additive_encoding[idx][ind], genodata.genotypes[ind], places=4)
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
             idx += 1
 
 if __name__ == "__main__":
