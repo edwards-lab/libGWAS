@@ -53,19 +53,23 @@ class AlleleCounts(object):
     def freq_missing(self):
         return self.missing / (self.total_alleles/2)
 
-    def set_allele_counts(self, a1, a2, het):
+    def set_allele_counts(self, a1, a2, het, freq2=None):
         self.a1_count = a1
         self.a2_count = a2
         self.het_count = het
         self.total_alleles = (a1 + a2)
 
-        self.effa_freq = a2 / float(self.total_alleles)
+        self.effa_freq = freq2
+
+        if self.effa_freq is None:
+            self.effa_freq = a2 / float(self.total_alleles)
 
         if self.effa_freq > 0.5:
-            self.maf = a1 / float(self.total_alleles)
+            self.maf = 1 - self.effa_freq
             self.minor_allele, self.major_allele = self.alleles
         else:
             self.maf = self.effa_freq
+
 
     def __str__(self):
         return " ".join([str(x) for x in [self.a1_count, self.a2_count, self.total_alleles, self.effa_freq, self.maf, self.minor_allele]])
