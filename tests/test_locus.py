@@ -4,6 +4,7 @@ from libgwas.pheno_covar import PhenoCovar
 from libgwas.transposed_pedigree_parser import Parser as TransposedPedigreeParser
 from libgwas.locus import Locus
 
+import unittest
 
 class TestLocusBasics(test_transped_parser.TestBase):
     # Test to make sure we can load everything
@@ -96,3 +97,9 @@ class TestLocusBasics(test_transped_parser.TestBase):
         self.assertEqual(0.46, l1.hetero_freq)
         self.assertEqual('C', l1.major_allele)
         self.assertEqual('A', l1.minor_allele)
+
+
+
+if __name__ == "__main__":
+    unittest.main()
+
