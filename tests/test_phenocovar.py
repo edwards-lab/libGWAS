@@ -16,6 +16,8 @@ from libgwas.exceptions import InvalidSelection
 from libgwas.exceptions import NoMatchedPhenoCovars
 from libgwas.data_parser import DataParser
 import libgwas.standardizer
+from libgwas.exceptions import InvariantVar
+from libgwas.exceptions import TooMuchMissingpPhenoCovar
 
 class TestBase(unittest.TestCase):
     def setUp(self):
@@ -212,9 +214,61 @@ class TestIteration(TestBase):
     def testEmptyIterator(self):
         pc = PhenoCovar()
         count = 0
-        for test in pc:
-            count += 1
+        invalid = 0
+        missingness = 0
+        try:
+            for test in pc:
+                count += 1
+        except InvariantVar as e:
+            invalid += 1
+        except TooMuchMissingpPhenoCovar as e:
+            missingness += 1
+        self.assertEqual(0, invalid)
+        self.assertEqual(1, missingness)
+        self.assertEqual(0, count)
 
+    def testStaticPheno(self):
+        pc = PhenoCovar()
+        count = 0
+        invalid = 0
+        missingness = 0
+        pc.add_subject("1:1", phenotype=1)
+        pc.add_subject("2:2", phenotype=1)
+        pc.add_subject("3:3", phenotype=1)
+        pc.add_subject("4:4", phenotype=1)
+        pc.freeze_subjects()
+        try:
+            for test in pc:
+                (pheno, covars, nonmissing) = test.get_variables(numpy.array([False, False, False, False]))
+                count += 1
+        except InvariantVar as e:
+            invalid += 1
+        except TooMuchMissingpPhenoCovar as e:
+            missingness += 1
+        self.assertEqual(1, invalid)
+        self.assertEqual(0, missingness)
+        self.assertEqual(0, count)
+
+    def testPhenoWithAllMissing(self):
+        pc = PhenoCovar()
+        count = 0
+        invalid = 0
+        missingness = 0
+        pc.add_subject("1:1", phenotype=1)
+        pc.add_subject("2:2", phenotype=1)
+        pc.add_subject("3:3", phenotype=1)
+        pc.add_subject("4:4", phenotype=1)
+        pc.freeze_subjects()
+        try:
+            for test in pc:
+                (pheno, covars, nonmissing) = test.get_variables(numpy.array([True, True, True, True]))
+                count += 1
+        except InvariantVar as e:
+            invalid += 1
+        except TooMuchMissingpPhenoCovar as e:
+            missingness += 1
+        self.assertEqual(0, invalid)
+        self.assertEqual(1, missingness)
         self.assertEqual(0, count)
 
     def testEmptyInit(self):
