@@ -95,6 +95,8 @@ class Parser(transposed_pedigree_parser.Parser):
 
         self.parser_name = bed
 
+        self.alt_not_missing = None
+
     def getnew(self):
         return Parser(self.fam_file, self.bim_file, self.bed_file)
 
@@ -248,7 +250,7 @@ class Parser(transposed_pedigree_parser.Parser):
         magic, data_format = struct.unpack("<HB", self.genotype_file.read(3))
 
         if data_format != 1:
-            Exit(("MVTEST is currently unable to read data formatted as " +
+            Exit(("This application is currently unable to read data formatted as " +
                  "individual major. You must regenerate your data in SNP major"+
                  " format. "))
 
@@ -279,10 +281,14 @@ class Parser(transposed_pedigree_parser.Parser):
 
         max_missing = DataParser.ind_miss_tol * locus_count
         dropped_individuals = 0+(max_missing<missing)
-
-        self.ind_mask = self.ind_mask|dropped_individuals
+        if sum(dropped_individuals) > 0:
+            # This will be ORd, so it needs to be one for not
+            self.alt_not_missing = dropped_individuals != 1
+            self.alt_not_missing = self.alt_not_missing[self.ind_mask != 1]
+        #self.ind_mask = self.ind_mask|dropped_individuals
 
         valid_individuals = numpy.sum(self.ind_mask==0)
+
         max_missing = DataParser.snp_miss_tol * valid_individuals
 
         # We can't merge these two iterations since we need to know which
@@ -291,27 +297,8 @@ class Parser(transposed_pedigree_parser.Parser):
         self.genotype_file.seek(0)
         self.genotype_file.read(3)
         self.total_locus_count = self.locus_count
-        self.locus_count = 0
-        last_chr = -1
-        for index in range(self.total_locus_count):
-            buffer = struct.unpack(self.fmt_string,
-                                   self.genotype_file.read(self.bytes_per_read))
+        self.locus_count = locus_count
 
-            genotypes = numpy.ma.MaskedArray(self.extract_genotypes(buffer),
-                                             self.ind_mask).compressed()
-            chr, pos = self.markers[index]
-
-            rsid = self.rsids[index]
-            if DataParser.boundary.TestBoundary(chr, pos, rsid):
-                if last_chr != chr:
-                    sys.stdout.flush()
-                    last_chr = chr
-                missing = numpy.sum(0+(genotypes==DataParser.missing_storage))
-                if missing > max_missing:
-                    DataParser.boundary.dropped_snps[int(chr)].add(int(pos))
-                    dropped_snps.append(rsid)
-                else:
-                    self.locus_count += 1
 
     def load_genotypes(self):
         """Prepares the file for genotype parsing.
