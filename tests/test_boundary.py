@@ -31,8 +31,11 @@ class TestBoundaryInitialization(TestBase):
 
         # At this point, this should any valid chromosome/position combination
         self.assertTrue(b.TestBoundary(1, 100, ""))
-        self.assertTrue(True, b.TestBoundary(10, 1000000, ""))
-        self.assertTrue(True, b.TestBoundary(25, 10000, ""))
+        self.assertTrue(b.TestBoundary(10, 1000000, ""))
+        self.assertTrue(b.TestBoundary(25, 10000, ""))
+        self.assertTrue(b.TestBoundary('Y', 1400, ""))
+        self.assertFalse(b.TestBoundary('FF', 35, ""))
+        self.assertFalse(b.TestBoundary(28, 10000, ""))
 
         # We should test that our short circuit functionality works
         self.assertTrue(b.NoExclusions())

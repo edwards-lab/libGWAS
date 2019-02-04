@@ -44,6 +44,34 @@ class BoundaryCheck(object):
 
     """
     chrom = -1
+    chrom_name = None
+
+    chrom_conversion = {
+                1:1, "1":1, "chr1":1,
+                2:2, "2":2, "chr2":2,
+                3:3, "3":3, "chr3":3,
+                4:4, "4":4, "chr4":4,
+                5:5, "5":5, "chr5":5,
+                6:6, "6":6, "chr6":6,
+                7:7, "7":7, "chr7":7,
+                8:8, "8":8, "chr8":8,
+                9:9, "9":9, "chr9":9,
+                10:10, "10":10, "chr10":10,
+                11:11, "11":11, "chr11":11,
+                12:12, "12":12, "chr12":12,
+                13:13, "13":13, "chr13":13,
+                14:14, "14":14, "chr14":14,
+                15:15, "15":15, "chr15":15,
+                16:16, "16":16, "chr16":16,
+                17:17, "17":17, "chr17":17,
+                18:18, "18":18, "chr18":18,
+                19:19, "19":19, "chr19":19,
+                20:20, "20":20, "chr20":20,
+                21:21, "21":21, "chr21":21,
+                22:22, "22":22, "chr22":22,
+                23:23, "X":23, "x":23, "chrX":23, "chrx":23,
+                24:24, "Y":24, "y":24, "chrY":24, "chry":24,
+                25:25, "MT":25, "mt":25, "chrMT":25, "chrmt":25}
     def __init__(self, bp=(None, None), kb=(None, None), mb=(None, None)):
         """Initialize boundary
 
@@ -93,11 +121,16 @@ class BoundaryCheck(object):
             # If there is a meaningful boundary configuration but a meaningless
             # chromosome in place, then there is a problem
             try:
-                chr = int(BoundaryCheck.chrom)
+                chr = BoundaryCheck.chrom_conversion[BoundaryCheck.chrom]
             except:
                 self.valid = False
         #: Is set once the upper limit has been exceeded
         self.beyond_upper_bound = False
+
+    @classmethod
+    def set_chrom(cls, chrom):
+        BoundaryCheck.chrom_name = chrom
+        BoundaryCheck.chrom = BoundaryCheck.chrom_conversion[chrom]
 
     def LoadExclusions(self, snps):
         """ Load locus exclusions.
@@ -127,46 +160,51 @@ class BoundaryCheck(object):
         :return: True if locus isn't to be ignored
         """
 
+        if chr in BoundaryCheck.chrom_conversion:
+            chrom = BoundaryCheck.chrom_conversion[chr]
+        else:
+            self.logger.debug("Invalid chromosome: ", chr)
+            return False
         # We can skip over anything that has a negative boundary
         if pos < 0:
-            self.logger.debug("%d:%d %s Invalid Position" % (chr, pos, rsid))
+            self.logger.debug("%s:%d %s Invalid Position" % (str(chr), pos, rsid))
             return False
 
         # Skip over anything that has been explicitly ignored
         if rsid in self.ignored_rs:
-            self.logger.debug("%d:%d %s ignored RS ID" % (chr, pos, rsid))
+            self.logger.debug("%s:%d %s ignored RS ID" % (str(chr), pos, rsid))
             return False
 
         # If Chromosome isn't defined, then we have no bounds
         if BoundaryCheck.chrom == -1:
             if pos in self.dropped_snps[chr]:
-                self.logger.debug("%d:%d %s pos in dropped_snps" % (chr, pos, rsid))
+                self.logger.debug("%s:%d %s pos in dropped_snps" % (str(chr), pos, rsid))
                 return False
             return True
 
         self.beyond_upper_bound = chr > BoundaryCheck.chrom
         if not self.beyond_upper_bound:
-            if chr == BoundaryCheck.chrom:
+            if chrom == BoundaryCheck.chrom:
                 if len(self.bounds) == 0:
-                    if pos in self.dropped_snps[chr]:
+                    if pos in self.dropped_snps[chrom]:
                         self.logger.debug(
-                            "%d:%d %s pos in dropped_snps" % (chr, pos, rsid))
+                            "%s:%d %s pos in dropped_snps" % (str(chr), pos, rsid))
                         return False
                     return True
 
                 if (pos>=self.bounds[0]) and (pos<=self.bounds[1]):
-                    if pos in self.dropped_snps[chr]:
+                    if pos in self.dropped_snps[chrom]:
                         self.logger.debug(
-                            "%d:%d %s in dropped snps" % (chr, pos, rsid))
+                            "%s:%d %s in dropped snps" % (str(chr), pos, rsid))
 
                         return False
                     return True
                 self.beyond_upper_bound = pos > self.bounds[1]
         else:
-            self.logger.debug("%d:%d %s beyond upper bound" % (chr, pos, rsid))
+            self.logger.debug("%s:%d %s beyond upper bound" % (str(chr), pos, rsid))
 
         if rsid not in self.target_rs:
-            self.logger.debug("%d:%d %s rs not in target list" % (chr, pos, rsid))
+            self.logger.debug("%s:%d %s rs not in target list" % (str(chr), pos, rsid))
             return False
         return True
 
@@ -192,7 +230,7 @@ class BoundaryCheck(object):
 
         log = logging.getLogger('Boundary::ReportConfiguration')
         if BoundaryCheck.chrom != -1:
-            log.info(BuildReportLine("CHROM", BoundaryCheck.chrom))
+            log.info(BuildReportLine("CHROM", BoundaryCheck.chrom_name))
             if len(self.bounds) > 0:
                 log.info(BuildReportLine("SNP BOUNDARY", "-".join(
                     [str(x) for x in self.bounds])))
