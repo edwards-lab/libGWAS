@@ -12,6 +12,7 @@ import os
 
 import logging
 from pheno_covar import PhenoCovar
+import boundary
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"
@@ -92,6 +93,7 @@ class Parser(DataParser):
         This function assumes that all dosage files have the same sample order \
             (as with the output from minimac)
         """
+        boundary.BoundaryCheck.chrom_conversion['NA'] = -1
         smallest = -1
 
         # We'll use the smallest file to determine the sample order
@@ -143,7 +145,6 @@ class Parser(DataParser):
         self.file_index = 0
 
         assert len(self.info_files) == len(self.archives)
-
 
     def ReportConfiguration(self):
         """Report the configuration details for logging purposes.
