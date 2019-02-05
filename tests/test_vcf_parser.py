@@ -207,6 +207,8 @@ class TestVcfFiles(TestBase):
         ]
         index = 0
         valid = 0
+        missing = 0
+        freq = 0
         for snp in parser:
             snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
             try:
@@ -217,12 +219,14 @@ class TestVcfFiles(TestBase):
                 self.assertEqual(genotypes_w_missing[index], list(genodata.genotypes))
                 valid += 1
             except TooMuchMissing as e:
-                pass
+                missing += 1
             except InvalidFrequency as e:
-                pass
+                freq += 1
             index += 1
 
-        self.assertEqual(6, valid)
+        self.assertEqual(0, freq)
+        self.assertEqual(0, missing)
+        self.assertEqual(7, valid)
 
     def testMissingMxSnpComplete(self):
         pc = PhenoCovar()

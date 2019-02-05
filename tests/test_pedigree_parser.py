@@ -810,7 +810,7 @@ class TestIndExclusions(TestBase):
 
         missing_genotypes = [
             [ 0,  1,  0,  0,  1,  0,  0,  1,  0,  0],
-            [ 0],
+            [ 1,  0],
             [ 2,  1,  1,  0,  0,  0,  2,  1,  1],
             [ 1,  0,  1,  1,  2,  2,  1,  0,  1],
             [ 2,  0,  1,  0,  0,  1,  2,  0,  1],
@@ -850,7 +850,7 @@ class TestIndExclusions(TestBase):
         # encountered)
         missing_genotypes = [
             [1, 0, 0, 1, 0, 0, 1, 0, 0],
-            [-1, -1, -1, -1, -1, -1, -1, -1, 0],
+            [1, 0],
             [2, 1, 1, 0, 0, 0, 2, 1, 1],
             [1, 0, 1, 1, 2, 2, 1, 0, 1],
             [2, 0, 1, 0, 0, 1, 2, 0, 1],
@@ -1020,6 +1020,8 @@ class TestMissingData(TestBase):
         ]
 
         index = 0
+        missing = 0
+        freq = 0
         valid_evaluations = 0
         for snp in ped_parser:
             for y in pc:
@@ -1032,11 +1034,13 @@ class TestMissingData(TestBase):
                     self.assertEqual(missing_genotypes[index], list(genodata.genotypes))
                     valid_evaluations += 1
                 except TooMuchMissing as e:
-                    pass
+                    missing += 1
                 except InvalidFrequency as e:
-                    pass
+                    freq += 1
 
             index += 1
+        self.assertEqual(1, missing)
+        self.assertEqual(0, freq)
         self.assertEqual(6, valid_evaluations)
         self.assertEqual(7, index)
 class TestWithFewIndividuals(TestBase):
@@ -1057,6 +1061,8 @@ class TestWithFewIndividuals(TestBase):
             [0, 1, 1]
         ]
         index = 0
+        missing = 0
+        freq = 0
         for snp in ped_parser:
             for y in pc:
                 (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
@@ -1067,10 +1073,12 @@ class TestWithFewIndividuals(TestBase):
                     self.assertEqual(mapdata[index][1], snp.rsid)
                     self.assertEqual(genotypes[index], list(genodata.genotypes))
                 except TooMuchMissing as e:
-                    pass
+                    missing += 1
                 except InvalidFrequency as e:
-                    pass
+                    freq += 1
             index += 1
+        self.assertEqual(0, missing)
+        self.assertEqual(0, freq)
         self.assertEqual(7, index)
 
 class TestMapFile(TestBase):

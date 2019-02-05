@@ -44,6 +44,7 @@ class AlleleCounts(object):
 
         self.het_count = 0
         self.missing = numpy.sum(non_missing==0)
+        self.non_missing = non_missing
 
     @property
     def hetero_freq(self):
@@ -51,7 +52,7 @@ class AlleleCounts(object):
 
     @property
     def freq_missing(self):
-        return self.missing / (self.total_alleles/2)
+        return self.missing / float(self.non_missing.shape[0])
 
     def set_allele_counts(self, a1, a2, het, freq2=None):
         self.a1_count = a1
