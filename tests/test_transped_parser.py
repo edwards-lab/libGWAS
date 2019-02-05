@@ -239,7 +239,7 @@ class TestPedFilesTPedIndExclusions(TestBase):
     def testMissingWithExclusions(self):
         DataParser.ind_exclusions = ["2:2", "3:3"]
         genotypes_w_missing = [
-            [0, -1, -1, -1, -1, -1, -1, -1, -1, 1],
+            [0, 1],
             [1, 0, 0, 1, 1, 1, 0, 0, 0, 1],
             [0, 1, 0, 0, 0, 2, 1, 1, 0, 0],
             [0, 1, 1, 0, 0, 1, 2, 1, 1, 0],
@@ -283,7 +283,7 @@ class TestPedFilesTPedIndExclusions(TestBase):
         mapdata = [x.strip().split() for x in open(self.miss_tped_filename).readlines()]
 
         genotypes_w_missing = [
-            [0, -1, -1, -1, -1, -1, -1, -1, -1, 1],
+            [0, 1],
             [1, 0, 0, 1, 1, 1, 0, 0, 0, 1],
             [0, 1, 0, 0, 0, 2, 1, 1, 0, 0],
             [0, 1, 1, 0, 0, 1, 2, 1, 1, 0],
@@ -292,7 +292,7 @@ class TestPedFilesTPedIndExclusions(TestBase):
             [0, 0, 0, 0, 0, 1, 1, 0, 0, 0]
 
         ]
-        index = 1
+        index = 0
         non_missing = self.non_missing
         non_missing[1] = False
         non_missing[2] = False
@@ -458,7 +458,7 @@ class TestPedFilesTPed(TestBase):
 
         mapdata = [x.strip().split() for x in open(self.miss_tped_filename).readlines()]
         genotypes_w_missing = [
-            [0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1],
+            [0, 1],
             [1,  0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
             [0,  1, 1, 0, 0, 0, 2, 1, 1, 0, 0],
             [0,  2, 1, 1, 0, 0, 1, 2, 1, 1, 0],

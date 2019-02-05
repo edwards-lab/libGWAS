@@ -54,6 +54,9 @@ class Parser(DataParser):
         #: Subjects dropped due to missing individual threshold
         self.alt_not_missing = None
 
+        #: Count of valid loci without filtering on missingness other than explicit drops
+        self.locus_count = -1
+
     def initialize(self, map3=None, pheno_covar=None):
         # Required for some parser types
 
@@ -144,9 +147,9 @@ class Parser(DataParser):
         # Strip out any excluded individuals
         allelic_data = numpy.ma.MaskedArray(numpy.array(data[4:], dtype="S2"), self.ind_mask).compressed().reshape(-1, 2)
 
-        maj_allele_count = numpy.sum(allelic_data==alleles[0])
+        maj_allele_count = numpy.sum(allelic_data == alleles[0])
 
-        min_allele_count = numpy.sum(allelic_data==alleles[1])
+        min_allele_count = numpy.sum(allelic_data == alleles[1])
 
         effect_allele_count = min_allele_count
         if min_allele_count > maj_allele_count:
@@ -156,14 +159,14 @@ class Parser(DataParser):
             min_allele_count = allele_count
 
         #genotypes = []
-        major_allele       = alleles[0]
-        minor_allele       = alleles[1]
+        major_allele = alleles[0]
+        minor_allele = alleles[1]
 
         # Genotypes represent the sum of minor alleles at each sample
-        genotype_data = numpy.sum(allelic_data==minor_allele, axis=1)
-        missing_alleles = allelic_data[:, 0]==DataParser.missing_representation
+        genotype_data = numpy.sum(allelic_data == minor_allele, axis=1)
+        missing_alleles = allelic_data[:, 0] == DataParser.missing_representation
         genotype_data[missing_alleles] = DataParser.missing_storage
-        hetero_count = numpy.sum(genotype_data==1)
+        hetero_count = numpy.sum(genotype_data == 1)
 
         return (genotype_data,
                 major_allele,
@@ -193,14 +196,17 @@ class Parser(DataParser):
                 if missing is None:
                     missing = numpy.zeros(allelic_data.shape[0], dtype='int8')
                 missing += (numpy.sum(0+(allelic_data==DataParser.missing_representation), axis=1)/2)
+            else:
+                print "Invalid Boundary: ", chr, pos, rsid
 
-        max_missing = DataParser.ind_miss_tol * locus_count
-        dropped_individuals = 0+(max_missing<missing)
+        if missing is not None:
+            max_missing = DataParser.ind_miss_tol * locus_count
+            dropped_individuals = 0+(max_missing<missing)
 
-        if sum(dropped_individuals) > 0:
-            # This will be ORd, so it needs to be one for not
-            self.alt_not_missing = dropped_individuals != 1
-            self.alt_not_missing = self.alt_not_missing[self.ind_mask[0:, 0] != 1]
+            if sum(dropped_individuals) > 0:
+                # This will be ORd, so it needs to be one for not
+                self.alt_not_missing = dropped_individuals != 1
+                self.alt_not_missing = self.alt_not_missing[self.ind_mask[0:, 0] != 1]
         self.locus_count = locus_count
 
 
@@ -224,7 +230,8 @@ class Parser(DataParser):
                     iteration.missing_genotypes,
                     iteration.allele_count2] = self.process_genotypes(genotypes)
                 iteration.missing_allele_count = numpy.sum(iteration.missing_genotypes)
-                return iteration.maf >= DataParser.min_maf and iteration.maf <= DataParser.max_maf
+                return True
+                #return iteration.maf >= DataParser.min_maf and iteration.maf <= DataParser.max_maf
             except TooFewAlleles:
                 print "\n\n\nSkipping %s:%s %s %s" % (iteration.chr, iteration.pos, iteration.rsid, cur_idx)
 
