@@ -196,8 +196,7 @@ class Parser(DataParser):
                 if missing is None:
                     missing = numpy.zeros(allelic_data.shape[0], dtype='int8')
                 missing += (numpy.sum(0+(allelic_data==DataParser.missing_representation), axis=1)/2)
-            else:
-                print "Invalid Boundary: ", chr, pos, rsid
+
 
         if missing is not None:
             max_missing = DataParser.ind_miss_tol * locus_count
