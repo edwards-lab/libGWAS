@@ -66,11 +66,11 @@ class Parser(DataParser):
         #: Number of valid loci
         self.locus_count = None
         #: List of both alleles for each valid locus
-        alleles = None
+        self.alleles = None
         #: List of all SNP names for valid loci
         self.rsids = None
         #: List of MAF at each locus
-        markers_maf = None
+        self.markers_maf = None
 
         #: Subjects dropped due to missing individual threshold
         self.alt_not_missing = None
@@ -84,7 +84,6 @@ class Parser(DataParser):
     def initialize(self, map3=False, pheno_covar=None):
         self.load_mapfile(map3=map3)
         self.load_genotypes(pheno_covar)
-
 
     def ReportConfiguration(self):
         """ Report configuration for logging purposes.
@@ -249,33 +248,38 @@ class Parser(DataParser):
         allele_count2s = []
 
         for i in xrange(0, snp_count):
+            valid = True
             snp_geno = allelic_data[:,i]
             alleles, allele_counts = numpy.unique(snp_geno, return_counts=True)
             allele_counts = dict(zip(alleles, allele_counts))
             alleles = list(set(alleles) - set([DataParser.missing_representation]))
 
             if len(alleles) > 2:
-                raise TooManyAlleles(chr=self.markers[i][0],
-                                     rsid=self.rsids[i],
-                                     alleles=alleles)
+                valid = False
+
+                log.info("Too many alleles: %s:%s %s" % (str(self.markers[i][0], self.rsids[i], alleles)))
+                DataParser.boundary.ignored_rs.append(self.rsids[i])
+
             if len(alleles) < 2:
-                raise TooFewAlleles(chr=self.markers[i][0],
-                                    rsid=self.rsids[i],
-                                    alleles=alleles)
+                valid = False
+                log.info("Too few alleles: %s:%s %s" % (str(self.markers[i][0], self.rsids[i], alleles)))
+                DataParser.boundary.ignored_rs.append(self.rsids[i])
 
-            # Let's order the genotypes according to allele freq
-            #print i, alleles, allele_counts
-            if allele_counts[alleles[0]] < allele_counts[alleles[1]]:
-                alleles = [alleles[1], alleles[0]]
 
-            genotype_data = numpy.sum(snp_geno == alleles[1], axis=1)
-            # Correct the missing stuff, since those will have summed up to be nonsense
-            genotype_data[snp_geno[:, 0] == DataParser.missing_representation] = DataParser.missing_storage
+            if valid:
+                # Let's order the genotypes according to allele freq
+                #print i, alleles, allele_counts
+                if allele_counts[alleles[0]] < allele_counts[alleles[1]]:
+                    alleles = [alleles[1], alleles[0]]
 
-            self.genotypes[valid_snps, :] = genotype_data
-            valid_snps += 1
-            valid_markers.append(list(self.markers[i]))
-            valid_rsids.append(self.rsids[i])
+                genotype_data = numpy.sum(snp_geno == alleles[1], axis=1)
+                # Correct the missing stuff, since those will have summed up to be nonsense
+                genotype_data[snp_geno[:, 0] == DataParser.missing_representation] = DataParser.missing_storage
+
+                self.genotypes[valid_snps, :] = genotype_data
+                valid_snps += 1
+                valid_markers.append(list(self.markers[i]))
+                valid_rsids.append(self.rsids[i])
 
         self.markers = valid_markers
         self.rsids   = valid_rsids
