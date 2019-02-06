@@ -75,6 +75,7 @@ class Parser(DataParser):
         # to exclude
         self.max_missing_geno = None
         self.sample_ids = None
+        self.alt_not_missing = None
 
         ExitIf("bgen file not found, %s" % (self.bgen_filename),
                 not os.path.exists(self.bgen_filename))
@@ -227,49 +228,10 @@ class Parser(DataParser):
                 iteration.genotype_data = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute(), self.geno_mask).compressed().reshape(-1, 3)
                 # Assuming that if we are missing the first dose, then we are missing them all
                 iteration.missing_genotypes = iteration.genotype_data[:, 0] == DataParser.missing_storage
-                return self.max_missing_geno is None or (numpy.sum(iteration.missing) < self.max_missing_geno)
 
-                if self.max_missing_geno is None or self.max_missing_geno > numpy.sum(genotypes == DataParser.missing_storage):
-                    estimate = None
-                    maf = None
-                    additive_estimate = genotypes[:, 1] + 2 * genotypes[:, 2]
-                    if encoding == impute_parser.Encoding.Dominant:
-                        estimate = genotypes[:, 1] + genotypes[:, 2]
-                    elif encoding == impute_parser.Encoding.Additive:
-                        estimate = additive_estimate
-                    elif encoding == impute_parser.Encoding.Recessive:
-                        estimate = genotypes[2]
-                    elif encoding == impute_parser.Encoding.Genotype:
-                        estimate = numpy.full_like(genotypes.shape, 2)
-                        estimate[genotypes[:, 1] > genotypes[:, 0] and genotypes[:, 1] > genotypes[:, 2]] = 1
-                        estimate[genotypes[:, 0] > genotypes[:, 1] and genotypes[:, 0] > genotypes[:, 2]] = 0
-                    iteration.non_missing_alc = genotypes.shape[0] * 2
-                    maf = numpy.mean(additive_estimate)/2
-                    iteration.allele_count2 = maf * (iteration.non_missing_alc * 2)
-                    iteration.effa_freq = maf
-                    iteration.major_allele, iteration.minor_allele = snpdata.alleles
-                    if maf > 0.5:
-                        iteration.min_allele_count = iteration.non_missing_alc - iteration.allele_count2
-                        iteration.maj_allele_count = iteration.allele_count2
-                        maf = 1.0 - maf
-                        mallele = iteration.major_allele
-                        iteration.maj_allele = iteration.minor_allele
-                        iteration.minor_allele = mallele
-                    else:
-                        iteration.min_allele_count = iteration.allele_count2
-                        iteration.maj_allele_count = iteration.non_missing_alc - iteration.allele_count2
-                    iteration._maf = maf
-                    iteration.genotype_data = numpy.array(estimate)
+                return True
 
-                    return iteration.maf >= DataParser.min_maf and iteration.maf <= DataParser.max_maf
-                else:
-                    # Should log why this is ignored
-                    return False
-            else:
-                return False
-
-        else:
-            return False
+        return False
 
 
     def filter_genotypes(self, missing):
