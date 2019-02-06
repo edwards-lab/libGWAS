@@ -912,6 +912,45 @@ class TestMissingData(TestBase):
             index += 1
         self.assertEqual(7, index)
 
+    # Unit test borrowed from MVtest because it wasn't detected here, where it should
+    # have been
+    def testPedCmdLineMIND2(self):
+        DataParser.ind_miss_tol = 0.1
+        pc = PhenoCovar()
+        ped_parser = PedigreeParser(self.map_filename, self.ped_filename_missing)
+        ped_parser.load_mapfile()
+        ped_parser.load_genotypes(pc)
+
+        genotypes = [
+            [ 0, 0, 1, 0],
+            [ 1, 0, 0, 1],
+            [ 0, 1, 0, 0],
+            [ 0, 1, 1, 0],
+            [ 0, 1, 0, 0],
+            [ 0, 0, 0, 0],
+             [0, 0, 0, 0]
+        ]
+
+        mapdata = [x.strip().split() for x in open(self.map_filename).readlines()]
+        skipped = 0
+        index = 0
+        for snp in ped_parser:
+            snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
+            try:
+                genodata = snp.get_genotype_data(snp_filter)
+                self.assertEqual(genotypes[index], list(genodata.genotypes))
+                self.assertEqual(int(mapdata[index][0]), snp.chr)
+                self.assertEqual(int(mapdata[index][3]), snp.pos)
+                self.assertEqual(mapdata[index][1], snp.rsid)
+                index += 1
+            except TooMuchMissing as e:
+                pass
+            except InvalidFrequency as e:
+                skipped += 1
+            except TooMuchMissingpPhenoCovar as e:
+                pass
+        self.assertEqual(0, skipped)
+        self.assertEqual(5, index)          # Last two are fixed
 
     def testMissingIndThresh(self):
         pc = PhenoCovar()

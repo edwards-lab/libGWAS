@@ -152,7 +152,7 @@ class Parser(DataParser):
         information
         :return: None
         """
-
+        log = logging.getLogger('ped_parser::ReportConfiguration')
         first_genotype = 6
         pheno_col      = 5
         if not DataParser.has_sex:
@@ -257,12 +257,12 @@ class Parser(DataParser):
             if len(alleles) > 2:
                 valid = False
 
-                log.info("Too many alleles: %s:%s %s" % (str(self.markers[i][0], self.rsids[i], alleles)))
+                log.info("Too many alleles: %s:%s %s" % (str(self.markers[i][0]), self.rsids[i], alleles))
                 DataParser.boundary.ignored_rs.append(self.rsids[i])
 
             if len(alleles) < 2:
                 valid = False
-                log.info("Too few alleles: %s:%s %s" % (str(self.markers[i][0], self.rsids[i], alleles)))
+                log.info("Too few alleles: %s:%s %s" % (str(self.markers[i][0]), self.rsids[i], alleles))
                 DataParser.boundary.ignored_rs.append(self.rsids[i])
 
 
