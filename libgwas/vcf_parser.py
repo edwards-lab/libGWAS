@@ -217,8 +217,6 @@ class Parser(DataParser):
             if line[0] == "#CHROM":
                 sample_ids = line[9:]
 
-        print len(sample_ids), "Were found!!!!!"
-
         ids_observed = set()
         for indid in sample_ids:
 
