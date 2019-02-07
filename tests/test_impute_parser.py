@@ -58,6 +58,9 @@ class TestBase(unittest.TestCase):
         self.parser_info_thresh = impute_parser.Parser.info_threshold
         impute_parser.Parser.info_threshold = 0.0
 
+        self.ind_exclusions = DataParser.ind_exclusions
+
+
     def tearDown(self):
         os.remove(self.fam_file)
         os.remove(self.gen_file)
@@ -84,6 +87,7 @@ class TestBase(unittest.TestCase):
         impute_parser.encoding = self.encoding
         DataParser.compressed_pedigree = self.compression
         impute_parser.Parser.info_threshold = self.parser_info_thresh
+        DataParser.ind_exclusions = self.ind_exclusions
 
     def WriteTestFiles(self, prefix = "__test_imputed"):
 
@@ -467,6 +471,82 @@ class TestImputedBasics(TestBase):
                     self.assertEqual(self.positions[idx], snp.pos)
                     for i in range(0, len(self.recessive_encoding[idx])):
                         self.assertAlmostEqual(self.recessive_encoding[idx][i], genodata.genotypes[i], places=3)
+
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
+            idx += 1
+        self.assertEqual(20, idx)
+
+    def testDroppedFromPheno(self):
+        impute_parser.encoding = impute_parser.Encoding.Genotype
+        PhenoCovar.sex_as_covariate = True
+        pc = PhenoCovar()
+        parser = impute_parser.Parser(self.fam_file, [self.gen_file, self.gen_file2], chroms = ["3", "4"])
+        parser.load_family_details(pc)
+        parser.load_genotypes()
+
+        idx = 0
+        flippers = {0:2, 1:1, 2:0}
+
+        for snp in parser:
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                # Let's fake a couple of missing data in phenotype
+                nonmissing[0] = False
+                nonmissing[1] = False
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    flip = self.mafs[idx] > 0.5
+                    for i in range(2, len(self.raw[idx])):
+                        genotype = 2
+                        AA, Aa, aa = self.raw[idx][i]
+                        if Aa >= AA and Aa >= aa:
+                            genotype = 1
+                        elif AA >= Aa and AA >= aa:
+                            genotype = 0
+                        if flip:
+                            genotype = flippers[genotype]
+                        self.assertAlmostEqual(genotype, genodata.genotypes[i-2], places=3)
+
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
+            idx += 1
+        self.assertEqual(20, idx)
+
+    def testDroppedIndividuals(self):
+        DataParser.ind_exclusions = ["ID0001:FAM001", "ID0002:FAM002"]
+        impute_parser.encoding = impute_parser.Encoding.Genotype
+        PhenoCovar.sex_as_covariate = True
+        pc = PhenoCovar()
+        parser = impute_parser.Parser(self.fam_file, [self.gen_file, self.gen_file2], chroms = ["3", "4"])
+        parser.load_family_details(pc)
+        parser.load_genotypes()
+
+        idx = 0
+        flippers = {0:2, 1:1, 2:0}
+
+        for snp in parser:
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    flip = self.mafs[idx] > 0.5
+                    for i in range(2, len(self.raw[idx])):
+                        genotype = 2
+                        AA, Aa, aa = self.raw[idx][i]
+                        if Aa >= AA and Aa >= aa:
+                            genotype = 1
+                        elif AA >= Aa and AA >= aa:
+                            genotype = 0
+                        if flip:
+                            genotype = flippers[genotype]
+                        self.assertAlmostEqual(genotype, genodata.genotypes[i-2], places=3)
 
                 except TooMuchMissing as e:
                     pass

@@ -299,7 +299,7 @@ class Parser(DataParser):
                 idx = 5
                 # total_maf = 0.0
                 # additive = []
-
+                genodata = line[idx:]
                 iteration.genotype_data = numpy.ma.MaskedArray(line[idx:], self.geno_mask).compressed().reshape(-1, 3).astype('float64')
                 iteration.missing_genotypes = iteration.genotype_data[:, 0] == DataParser.missing_storage
                 return True
