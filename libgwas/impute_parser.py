@@ -230,7 +230,7 @@ class Parser(DataParser):
         #self.ind_mask = numpy.zeros(len(mask_components), dtype=numpy.int8).reshape(-1, 2)
         self.ind_mask = numpy.array(mask_components, dtype=numpy.int8)
         self.ind_count = sum(self.ind_mask == 0)
-        self.geno_mask = self.ind_mask.reshape(self.ind_mask.shape[0], 1).repeat(3, axis=1)
+        self.geno_mask = self.ind_mask.reshape(-1, 1).repeat(3, axis=1)
         pheno_covar.freeze_subjects()
 
     def load_genotypes(self):
