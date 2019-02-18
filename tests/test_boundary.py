@@ -124,7 +124,6 @@ class TestBoundaryInitialization(TestBase):
     def testInvalidChrom(self):
         self.failUnlessRaises(InvalidChromosome, BoundaryCheck.set_chrom, '_my_chrom:1')
 
-
     def testBoundaryChr10(self):
         BoundaryCheck.set_chrom('chr10')
         b = BoundaryCheck(mb=[1,3])
@@ -218,6 +217,7 @@ class TestSnpBoundaryInitialization(TestBase):
         self.assertFalse(b.TestBoundary(21, 2500000, "rs987654321"))
         self.assertTrue(b.TestBoundary(22, 2500000, "rs987654321"))
 
+
 class TestSnpBoundaryInitializationNoChr(TestBase):
     """We are labelling the missing chromosomes in MACH as NA (as are positions).
     """
@@ -269,8 +269,6 @@ class TestSnpBoundaryInitializationNoChr(TestBase):
         self.assertFalse(b.TestBoundary("NA", "NA", "1:650"))
         self.assertFalse(b.TestBoundary(21, "NA", "1:987654321"))
         self.assertTrue(b.TestBoundary("NA", "NA", "1:987654321"))
-
-
 
 
 if __name__ == "__main__":
