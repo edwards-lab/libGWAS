@@ -108,13 +108,18 @@ class TestBoundaryInitialization(TestBase):
 
     def testBoundaryX(self):
         BoundaryCheck.set_chrom('X')
-        self.assertTrue(23, BoundaryCheck.chrom)
-        self.assertTrue('X', BoundaryCheck.chrom_name)
+        b = BoundaryCheck()
+        self.assertEqual(23, BoundaryCheck.chrom)
+        self.assertEqual('X', BoundaryCheck.chrom_name)
+        self.assertTrue(b.TestBoundary('x', 100, "rs100"))
+        self.assertTrue(b.TestBoundary('X', 1000, "rs1000"))
+        self.assertTrue(b.TestBoundary(23, 1000, "rs1000"))
+        self.assertFalse(b.TestBoundary('Y', 100, "rs100"))
 
     def testBoundaryY(self):
         BoundaryCheck.set_chrom('y')
-        self.assertTrue(24, BoundaryCheck.chrom)
-        self.assertTrue('y', BoundaryCheck.chrom_name)
+        self.assertEqual(24, BoundaryCheck.chrom)
+        self.assertEqual('y', BoundaryCheck.chrom_name)
 
     def testInvalidChrom(self):
         self.failUnlessRaises(InvalidChromosome, BoundaryCheck.set_chrom, '_my_chrom:1')

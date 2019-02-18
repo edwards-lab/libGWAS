@@ -194,7 +194,7 @@ class BoundaryCheck(object):
                 return False
             return True
 
-        self.beyond_upper_bound = chr > BoundaryCheck.chrom
+        self.beyond_upper_bound = chrom > BoundaryCheck.chrom
         if not self.beyond_upper_bound:
             if chrom == BoundaryCheck.chrom:
                 if len(self.bounds) == 0:
