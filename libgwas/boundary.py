@@ -131,8 +131,11 @@ class BoundaryCheck(object):
 
     @classmethod
     def set_chrom(cls, chrom):
+        if chrom in BoundaryCheck.chrom_conversion:
+            BoundaryCheck.chrom = BoundaryCheck.chrom_conversion[chrom]
+        else:
+            raise InvalidChromosome(chrom)
         BoundaryCheck.chrom_name = chrom
-        BoundaryCheck.chrom = BoundaryCheck.chrom_conversion[chrom]
 
     @classmethod
     def get_valid_chrom(cls, chr):

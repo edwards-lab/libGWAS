@@ -8,6 +8,7 @@ if "DEBUG" in sys.argv:
     sys.argv.remove("DEBUG")
 from libgwas.boundary import BoundaryCheck
 from libgwas.snp_boundary_check import SnpBoundaryCheck
+from libgwas.exceptions import InvalidChromosome
 import unittest
 
 
@@ -109,10 +110,15 @@ class TestBoundaryInitialization(TestBase):
         BoundaryCheck.set_chrom('X')
         self.assertTrue(23, BoundaryCheck.chrom)
         self.assertTrue('X', BoundaryCheck.chrom_name)
+
     def testBoundaryY(self):
         BoundaryCheck.set_chrom('y')
         self.assertTrue(24, BoundaryCheck.chrom)
         self.assertTrue('y', BoundaryCheck.chrom_name)
+
+    def testInvalidChrom(self):
+        self.failUnlessRaises(InvalidChromosome, BoundaryCheck.set_chrom, '_my_chrom:1')
+
 
     def testBoundaryChr10(self):
         BoundaryCheck.set_chrom('chr10')
