@@ -105,6 +105,27 @@ class TestBoundaryInitialization(TestBase):
         self.assertEqual(False, b.TestBoundary(1, 25000, ""))
         self.assertEqual(False, b.TestBoundary(10, 20000, ""))
 
+    def testBoundaryX(self):
+        BoundaryCheck.set_chrom('X')
+        self.assertTrue(23, BoundaryCheck.chrom)
+        self.assertTrue('X', BoundaryCheck.chrom_name)
+    def testBoundaryY(self):
+        BoundaryCheck.set_chrom('y')
+        self.assertTrue(24, BoundaryCheck.chrom)
+        self.assertTrue('y', BoundaryCheck.chrom_name)
+
+    def testBoundaryChr10(self):
+        BoundaryCheck.set_chrom('chr10')
+        b = BoundaryCheck(mb=[1,3])
+        self.assertTrue(b.valid)
+        self.assertFalse(b.NoExclusions())
+        self.assertTrue(b.TestBoundary(10, 1000000, ""))
+        self.assertTrue(b.TestBoundary(10, 1200000, ""))
+        self.assertTrue(b.TestBoundary(10, 3000000, ""))
+        self.assertFalse(b.TestBoundary(10, 3000001, ""))
+        self.assertFalse(b.TestBoundary(10, 999999, ""))
+        self.assertFalse(b.TestBoundary(1, 1000500, ""))
+
     def testBoundaryInitMB(self):
         BoundaryCheck.chrom = 10
         b = BoundaryCheck(mb=[1,3])
