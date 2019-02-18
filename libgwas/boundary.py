@@ -1,5 +1,6 @@
 import collections
 from exceptions import InvalidBoundarySpec
+from exceptions import InvalidChromosome
 from . import BuildReportLine
 import os
 import logging
@@ -47,6 +48,7 @@ class BoundaryCheck(object):
     chrom_name = None
 
     chrom_conversion = {
+                -1:-1, "NA":-1,
                 1:1, "1":1, "chr1":1,
                 2:2, "2":2, "chr2":2,
                 3:3, "3":3, "chr3":3,
@@ -131,6 +133,13 @@ class BoundaryCheck(object):
     def set_chrom(cls, chrom):
         BoundaryCheck.chrom_name = chrom
         BoundaryCheck.chrom = BoundaryCheck.chrom_conversion[chrom]
+
+    @classmethod
+    def get_valid_chrom(cls, chr):
+        """Return the valid integer representation for chr """
+        if chrom in cls.chrom_conversion:
+            return cls.chrom_conversion[chrom]
+
 
     def LoadExclusions(self, snps):
         """ Load locus exclusions.

@@ -154,6 +154,12 @@ class MalformedInputFile(ReportableException):
         super(MalformedInputFile, self).__init__(msg)
 
 
+class InvalidChromosome(ReportableException):
+    def __init__(self, chr):
+        self.chr = chr
+        msg = "An invalid chromosome specification has been encountered: %s" % (str(chr))
+        super(InvalidChromosome, self).__init__(msg)
+
 class InvalidSelection(MalformedInputFile):
     """Indicate that the user provided input that is meaningless.
 
