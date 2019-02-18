@@ -137,8 +137,8 @@ class BoundaryCheck(object):
     @classmethod
     def get_valid_chrom(cls, chr):
         """Return the valid integer representation for chr """
-        if chrom in cls.chrom_conversion:
-            return cls.chrom_conversion[chrom]
+        if chr in cls.chrom_conversion:
+            return cls.chrom_conversion[chr]
 
 
     def LoadExclusions(self, snps):

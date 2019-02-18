@@ -224,7 +224,7 @@ class Parser(DataParser):
             iteration.alleles = snpdata.alleles
             nalleles = snpdata.nalleles
             iteration.rsid = snpdata.rsid
-            if DataParser.boundary.TestBoundary(iteration.chr, iteration.pos, iteration.rsid):
+            if DataParser.boundary.TestBoundary(BoundaryCheck.get_valid_chrom(iteration.chr), iteration.pos, iteration.rsid):
                 iteration.genotype_data = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute(), self.geno_mask).compressed().reshape(-1, 3)
                 # Assuming that if we are missing the first dose, then we are missing them all
                 iteration.missing_genotypes = iteration.genotype_data[:, 0] == DataParser.missing_storage
