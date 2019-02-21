@@ -204,21 +204,27 @@ class BoundaryCheck(object):
                         return False
                     return True
 
-                if (pos>=self.bounds[0]) and (pos<=self.bounds[1]):
-                    if pos in self.dropped_snps[chrom]:
-                        self.logger.debug(
-                            "%s:%d %s in dropped snps" % (str(chr), pos, rsid))
+                if (pos>=self.bounds[0]):
+                    if (pos<=self.bounds[1]):
+                        if pos in self.dropped_snps[chrom]:
+                            self.logger.debug(
+                                "%s:%d %s in dropped snps" % (str(chr), pos, rsid))
 
-                        return False
-                    return True
-                self.beyond_upper_bound = pos > self.bounds[1]
+                            return False
+                        return True
+                    self.beyond_upper_bound = pos > self.bounds[1]
+                else:
+                    # Haven't reached the boundary region
+                    return False
+            else:
+                return False
         else:
             self.logger.debug("%s:%d %s beyond upper bound" % (str(chr), pos, rsid))
 
-        if rsid not in self.target_rs:
-            self.logger.debug("%s:%d %s rs not in target list" % (str(chr), pos, rsid))
-            return False
-        return True
+            if rsid not in self.target_rs:
+                self.logger.debug("%s:%d %s rs not in target list" % (str(chr), pos, rsid))
+                return False
+        return not self.beyond_upper_bound
 
     def NoExclusions(self):
         """Determine that there are no exclusion criterion in play
