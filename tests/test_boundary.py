@@ -61,22 +61,6 @@ class TestBoundaryInitialization(TestBase):
         self.assertEqual(False, b.TestBoundary(2, 250000, ""))
         self.assertEqual(False, b.TestBoundary(10, 10000, ""))
 
-    def testBoundaryInitBPWithInclusions(self):
-        BoundaryCheck.chrom = 1
-        b = BoundaryCheck(bp=[10000, 500000])
-        b.LoadSNPs(["rs12345", "rs23456"])
-        self.assertFalse(b.NoExclusions())
-        self.assertTrue(b.valid)
-        self.assertEqual(False, b.TestBoundary(1, 500, ""))
-        self.assertEqual(True, b.TestBoundary(1, 10000, ""))
-        self.assertEqual(True, b.TestBoundary(1, 500000, ""))
-        self.assertEqual(True, b.TestBoundary(1, 250000, ""))
-        self.assertEqual(False, b.TestBoundary(2, 250000, ""))
-        self.assertEqual(False, b.TestBoundary(10, 10000, ""))
-        self.assertTrue(b.TestBoundary(1, 1000000, "rs12345"))
-        self.assertTrue(b.TestBoundary(1, 1200000, "rs23456"))
-        self.assertFalse(b.TestBoundary(1, 1200011, "rs345678"))
-
     def testBoundaryInitBPWithExclusions(self):
         BoundaryCheck.chrom = 1
         b = BoundaryCheck(bp=[10000, 500000])
