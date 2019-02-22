@@ -4,6 +4,7 @@ from exceptions import InvalidChromosome
 from . import BuildReportLine
 import os
 import logging
+import sys
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"
@@ -171,7 +172,6 @@ class BoundaryCheck(object):
         :param rsid: RSID (used to check for exclusions)
         :return: True if locus isn't to be ignored
         """
-
         if chr in BoundaryCheck.chrom_conversion:
             chrom = BoundaryCheck.chrom_conversion[chr]
         else:
@@ -214,15 +214,8 @@ class BoundaryCheck(object):
                         return True
                     self.beyond_upper_bound = pos > self.bounds[1]
                 else:
-                    # Haven't reached the boundary region
                     return False
             else:
-                return False
-        else:
-            self.logger.debug("%s:%d %s beyond upper bound" % (str(chr), pos, rsid))
-
-            if rsid not in self.target_rs:
-                self.logger.debug("%s:%d %s rs not in target list" % (str(chr), pos, rsid))
                 return False
         return not self.beyond_upper_bound
 
