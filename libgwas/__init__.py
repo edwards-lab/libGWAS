@@ -47,6 +47,38 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+class Timer:
+    def __init__(self, fn=None):
+        self.start = datetime.datetime.now()
+        self.last_period = self.start
+        self.log = sys.stderr
+        if nf is not None:
+            self.log = open(fn, 'w')
+
+    def diff(self):
+        seconds (datetime.datetime.now() - self.start).seconds
+        value = "%ds" % (seconds)
+        if seconds > 120:
+            value = "%d:%d" % (math.floor(seconds/60), seconds%60)
+        return value
+        
+    def period(self):
+        now = datetime.datetime.now()
+        seconds = (now - self.start).seconds
+        value = "%ds" % (seconds)
+        if seconds > 120:
+            value = "%d:%d" % (math.floor(seconds/60), seconds%60)
+        self.last_period = now
+        return value
+
+    def report_period(self, msg):
+        print("%s %ds" % (msg, self.period(), file=self.log)
+        return f"{msg} {self.period()}s"
+        
+    def report_total(self, msg):
+        print(f"{msg} {self.diff}s", file=self.log)
+
+timer = Timer()
 
 
 class GenotypeData(object):
