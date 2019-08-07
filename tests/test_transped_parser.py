@@ -18,6 +18,19 @@ from libgwas.snp_boundary_check import SnpBoundaryCheck
 from libgwas.exceptions import InvalidFrequency
 from libgwas.exceptions import TooMuchMissing
 
+
+def get_lines(fn, split=False):
+    lines = []
+    
+    with open(fn) as f:
+        for line in f:
+            if split:
+                lines.append(line.strip().split())
+            else:
+                lines.append(line.strip())
+            
+    return lines
+    
 class TestBase(unittest.TestCase):
     def setUp(self):
         self.WriteTestFiles()
@@ -48,7 +61,10 @@ class TestBase(unittest.TestCase):
     def tearDown(self):
 
         for file in self.filenames:
-            os.remove(file)
+            try:
+                os.remove(file)
+            except:
+                pass
         PhenoCovar.sex_as_covariate = self.sex_as_covar
         BoundaryCheck.chrom  = self.chrom
         DataParser.boundary  = self.boundary
@@ -70,8 +86,8 @@ class TestBase(unittest.TestCase):
         self.tfam_filename = "%s.tfam" % (prefix)
         self.filenames.append(self.tfam_filename)
 
-        f = open(self.tfam_filename, "w")
-        f.write("""1 1 0 0 1 0.1
+        with open(self.tfam_filename, "w") as f:
+            f.write("""1 1 0 0 1 0.1
 2 2 0 0 1 0.4
 3 3 0 0 2 1.0
 4 4 0 0 2 0.5
@@ -87,12 +103,12 @@ class TestBase(unittest.TestCase):
 """)
 
 
-        f.close()
+
         self.pheno_values = [0.1, 0.4, 1.0, 0.5, 0.9, 1.0, 0.1, 0.4, 1.0, 0.5, 0.9, 1.0]
 
         self.tfam_missing = "%s_miss.tfam" % (prefix)
-        f = open(self.tfam_missing, 'w')
-        f.write("""1 1 0 0 1 -9
+        with open(self.tfam_missing, 'w') as f:
+            f.write("""1 1 0 0 1 -9
 2 2 0 0 1 0.4
 3 3 0 0 2 1.0
 4 4 0 0 2 0.5
@@ -108,8 +124,8 @@ class TestBase(unittest.TestCase):
 
         self.tped_filename = "%s.tped" % (prefix)
         self.filenames.append(self.tped_filename)
-        f = open(self.tped_filename, "w")
-        f.write("""1 rs0001 0 500 A A A C A A A A A C A A A A A C A A A A A C A A
+        with open(self.tped_filename, "w") as f:
+            f.write("""1 rs0001 0 500 A A A C A A A A A C A A A A A C A A A A A C A A
 1 rs0002 0 10000 G T G T G G G G G G G T G T G T G G G G G G G T
 1 rs0003 0 25000 A A G G A G A G A A A A A A G G A G A G A A A A
 1 rs0004 0 45000 G G C G C C C G C G G G G G C G C C C G C G G G
@@ -117,13 +133,13 @@ class TestBase(unittest.TestCase):
 2 rs0006 0 10000 G T G G G T G G G G G G G G G G G T G G G G G G
 2 rs0007 0 25000 T T C T C T T T T T T T T T C T C T T T T T T T
 """)
-        f.close()
+
         self.tped1_alleles = [["A","C"],["G","T"], ["A","G"],["G","C"], ["C","T"],["G","T"],["T","C"]]
         self.hetero_freq_tped = [0.3333, 0.5, 0.3333, 0.41667, 0.3333, 0.25,0.3333]
         self.miss_tped_filename = "%s-missing.tped" % (prefix)
         self.filenames.append(self.miss_tped_filename)
-        f = open(self.miss_tped_filename, "w")
-        f.write("""1 rs0001 0 500 A A 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A C
+        with open(self.miss_tped_filename, "w") as f:
+            f.write("""1 rs0001 0 500 A A 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 A C
 1 rs0002 0 10000 G T G T G G G G G G G T G T G T G G G G G G G T
 1 rs0003 0 25000 A A 0 0 A G A G A A A A A A G G A G A G A A A A
 1 rs0004 0 45000 G G 0 0 C C C G C G G G G G C G C C C G C G G G
@@ -152,11 +168,11 @@ class TestBase(unittest.TestCase):
             [0, -1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0]
 
         ]
-        f.close()
+
         self.misssnp_tped_filename = "%s-miss_snps.tped" % (prefix)
         self.filenames.append(self.misssnp_tped_filename)
-        f = open(self.misssnp_tped_filename, "w")
-        f.write("""1 rs0001 0 -500 A A A C A A A A A C A A A A A C A A A A A C A A
+        with open(self.misssnp_tped_filename, "w") as f:
+            f.write("""1 rs0001 0 -500 A A A C A A A A A C A A A A A C A A A A A C A A
 1 rs0002 0 -10000 G T G T G G G G G G G T G T G T G G G G G G G T
 1 rs0003 0 25000 A A G G A G A G A A A A A A G G A G A G A A A A
 1 rs0004 0 45000 G G C G C C C G C G G G G G C G C C C G C G G G
@@ -164,7 +180,7 @@ class TestBase(unittest.TestCase):
 2 rs0006 0 10000 G T G G G T G G G G G G G G G G G T G G G G G G
 2 rs0007 0 25000 T T C T C T T T T T T T T T C T C T T T T T T T
 """)
-        f.close()
+
 class TestPedFilesTPedIndExclusions(TestBase):
     def testCompleteWithExclusions(self):
         DataParser.ind_exclusions = ["1:1", "3:3"]
@@ -182,7 +198,7 @@ class TestPedFilesTPedIndExclusions(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        mapdata = [x.strip().split() for x in open(self.tped_filename).readlines()]
+        mapdata = get_lines(self.tped_filename, split=True)
 
         index = 0
         for snp in ped_parser:
@@ -218,7 +234,8 @@ class TestPedFilesTPedIndExclusions(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        mapdata = [x.strip().split() for x in open(self.tped_filename).readlines()]
+        mapdata = get_lines(self.tped_filename, split=True)
+
         index = 4
         for snp in ped_parser:
             snp_filter = numpy.ones(snp.missing_genotypes.shape[0]) == 1
@@ -254,7 +271,7 @@ class TestPedFilesTPedIndExclusions(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        mapdata = [x.strip().split() for x in open(self.miss_tped_filename).readlines()]
+        mapdata = get_lines(self.miss_tped_filename, split=True)
 
         index = 0
         for snp in ped_parser:
@@ -280,7 +297,7 @@ class TestPedFilesTPedIndExclusions(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        mapdata = [x.strip().split() for x in open(self.miss_tped_filename).readlines()]
+        mapdata = get_lines(self.miss_tped_filename, split=True)
 
         genotypes_w_missing = [
             [0, 1],
@@ -319,9 +336,9 @@ class TestPedFilesTPed(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-
         self.assertEqual(12, ped_parser.ind_count)
-        mapdata = [x.strip().split() for x in open(self.tped_filename).readlines()]
+        
+        mapdata = get_lines(self.tped_filename, split=True)
 
         index = 0
         for snp in ped_parser:
@@ -350,7 +367,9 @@ class TestPedFilesTPed(TestBase):
         self.assertEqual(12, len(pc.covariate_data[0]))
         self.assertEqual(12, len(pc.phenotype_data[0]))
         self.assertEqual(1, len(pc.phenotype_names))
-        mapdata = [x.strip().split() for x in open(self.tped_filename).readlines()]
+        
+        mapdata = get_lines(self.tped_filename, split=True)
+
         self.genotypes = [
             [1, 0, 0, 1, 0, 0, 1, 0, 0, 1],
             [1, 0, 0, 0, 1, 1, 1, 0, 0, 0],
@@ -391,7 +410,8 @@ class TestPedFilesTPed(TestBase):
         self.assertEqual(12, len(pc.covariate_data[0]))
         self.assertEqual(12, len(pc.phenotype_data[0]))
         self.assertEqual(1, len(pc.phenotype_names))
-        mapdata = [x.strip().split() for x in open(self.tped_filename).readlines()]
+        
+        mapdata = get_lines(self.tped_filename, split=True)
 
         index = 0
         self.assertEqual(7, ped_parser.locus_count)
@@ -420,7 +440,7 @@ class TestPedFilesTPed(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        mapdata = [x.strip().split() for x in open(self.miss_tped_filename).readlines()]
+        mapdata = get_lines(self.miss_tped_filename, split=True)
 
         self.assertEqual(7, ped_parser.locus_count)
         genotypes_w_missing = [
@@ -456,7 +476,8 @@ class TestPedFilesTPed(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        mapdata = [x.strip().split() for x in open(self.miss_tped_filename).readlines()]
+        mapdata = get_lines(self.miss_tped_filename, split=True)
+
         genotypes_w_missing = [
             [0, 1],
             [1,  0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
@@ -501,7 +522,7 @@ class TestPedFilesTPed(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        mapdata = [x.strip().split() for x in open(self.miss_tped_filename).readlines()]
+        mapdata = get_lines(self.miss_tped_filename, split=True)
 
         genotypes_w_missing = [
             [0, 0],
@@ -550,7 +571,8 @@ class TestPedFilesTPed(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        mapdata = [x.strip().split() for x in open(self.miss_tped_filename).readlines()]
+        mapdata = get_lines(self.miss_tped_filename, split=True)
+
         genotypes_w_missing = [
             [0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0],
             [1,  0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
