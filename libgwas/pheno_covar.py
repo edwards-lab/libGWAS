@@ -1,9 +1,9 @@
 import numpy
-from exceptions import MalformedInputFile
-from exceptions import InvalidSelection
-from exceptions import InvariantVar
-from exceptions import NoMatchedPhenoCovars
-from standardizer import get_standardizer
+from .exceptions import MalformedInputFile
+from .exceptions import InvalidSelection
+from .exceptions import InvariantVar
+from .exceptions import NoMatchedPhenoCovars
+from .standardizer import get_standardizer
 import enum
 import sys
 
@@ -84,12 +84,11 @@ class PhenoCovar(object):
     def __iter__(self):
         if self.test_variables is None:
             self.prep_testvars()
-        if len(self.phenotype_data) == 0 or len(self.phenotype_data[0]) == 0:
-            raise StopIteration
-        for idx in range(0, len(self.phenotype_data)):
-            self.test_variables.idx = idx
-            yield self.test_variables
-        raise StopIteration
+        if not (len(self.phenotype_data) == 0 or len(self.phenotype_data[0]) == 0):
+            for idx in range(0, len(self.phenotype_data)):
+                self.test_variables.idx = idx
+                yield self.test_variables
+        #raise StopIteration
 
     def prep_testvars(self):
         """Make sure that the data is in the right form and standardized as
@@ -136,12 +135,12 @@ class PhenoCovar(object):
         if PhenoCovar.sex_as_covariate and sex is not None:
             try:
                 self.covariate_data[0].append(float(sex))
-            except Exception, e:
+            except Exception as e:
                 raise MalformedInputFile("Invalid setting, %s, for sex in pedigree" % (sex))
         if PhenoCovar.sex_as_covariate and len(self.covariate_data[0]) != len(self.pedigree_data):
-            print >> sys.stderr, "What? "
-            print >> sys.stderr, self.covariate_data
-            print >> sys.stderr, self.pedigree_data
+            print("What? ", file=sys.stderr)
+            print(self.covariate_data, file=sys.stderr)
+            print(self.pedigree_data, file=sys.stderr)
             sys.exit(1)
     @classmethod
     def build_id(cls, row):
@@ -197,7 +196,7 @@ class PhenoCovar(object):
                         (max(valid_indices), file.name, line_number)
                     )
 
-                for i in xrange(0, len(valid_indices)):
+                for i in range(0, len(valid_indices)):
                     self.phenotype_names.append(phenotype_names[valid_indices[i]-1])
                 # Dump the second line for sample_file==True
                 if sample_file:
@@ -218,7 +217,7 @@ class PhenoCovar(object):
                     )
 
                 self.phenotype_names = []
-                for i in xrange(0, len(valid_indices)):
+                for i in range(0, len(valid_indices)):
                     self.phenotype_names.append("Pheno-%s" % (valid_indices[i]))
 
             pheno_count = len(valid_indices)
@@ -313,7 +312,7 @@ class PhenoCovar(object):
                 if len(var_indices) > 0 and max(var_indices) > (len(header)):
                     raise InvalidSelection("The index, %s, is larger than the number of entries in the file, %s:%s" % (max(var_indices), file.name, line_number))
 
-                for i in xrange(0, len(var_indices)):
+                for i in range(0, len(var_indices)):
                     self.covariate_labels.append("Cov-%s" % (var_indices[i]-1))
 
             covar_data = numpy.empty((len(var_indices)+len(self.covariate_data), len(self.pedigree_data)))
