@@ -106,7 +106,7 @@ class TestBoundaryInitialization(TestBase):
         self.assertEqual('y', BoundaryCheck.chrom_name)
 
     def testInvalidChrom(self):
-        self.failUnlessRaises(InvalidChromosome, BoundaryCheck.set_chrom, '_my_chrom:1')
+        self.assertRaises(InvalidChromosome, BoundaryCheck.set_chrom, '_my_chrom:1')
 
     def testBoundaryChr10(self):
         BoundaryCheck.set_chrom('chr10')

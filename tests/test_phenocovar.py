@@ -19,6 +19,15 @@ import libgwas.standardizer
 from libgwas.exceptions import InvariantVar
 from libgwas.exceptions import TooMuchMissingpPhenoCovar
 
+def get_lines(fn):
+    lines = []
+    
+    with open(fn) as f:
+        for line in f:
+            lines.append(line.strip())
+            
+    return lines
+
 class TestBase(unittest.TestCase):
     def setUp(self):
         self.pcsac = PhenoCovar.sex_as_covariate
@@ -27,7 +36,9 @@ class TestBase(unittest.TestCase):
         self.no_header = open(self.filenames[0])
 
         self.header = open(self.filenames[1])
-        self.ped = [l.strip() for l in open(self.filenames[2]).readlines()]
+        
+        self.ped = get_lines(self.filenames[2])
+
         self.nh_filename = self.filenames[0]        # No header
         self.h_filename = self.filenames[1]         # Header
         self.ped_filename = self.filenames[2]       # Pedigree
@@ -50,8 +61,13 @@ class TestBase(unittest.TestCase):
 
 
     def tearDown(self):
+        self.no_header.close()
+        self.header.close()
         for file in self.filenames:
-            os.remove(file)
+            try:
+                os.remove(file)
+            except:
+                pass
         PhenoCovar.sex_as_covariate = self.pcsac
         DataParser.has_pheno = self.has_pheno
         libgwas.standardizer.set_standardizer(self.standardizer)
@@ -71,15 +87,15 @@ Fam6\tInd6\t0.1""")
         filenames.append(filename)
 
         filename = "%s_sch.txt" % (prefix)
-        f = open(filename, "w")
-        f.write("""fid\tIID\tBMI
+        with open(filename, "w") as f:
+            f.write("""fid\tIID\tBMI
 Fam1\tInd1\t0.9
 Fam2\tInd2\t1.0
 Fam3\tInd3\t0.4
 Fam4\tInd4\t0.8
 Fam5\tInd5\t1
 Fam6\tInd6\t0.1""")
-        f.close()
+
         filenames.append(filename)
 
         filename = "%s.ped" % (prefix)
@@ -152,15 +168,15 @@ Fam6\tInd6\t0.1""")
 
 
         filename = "%s_miss.txt" % (prefix)
-        f = open(filename, "w")
-        f.write("""FID\tIID\tBMI\tIBM\tMSA
+        with open(filename, "w") as f:
+            f.write("""FID\tIID\tBMI\tIBM\tMSA
 Fam1\tInd1\t-9\t1.0\t0.5
 Fam2\tInd2\t0.2\t-9\t1.0
 Fam3\tInd3\t0.3\t0.6\t-9
 Fam4\tInd4\t0.4\t0.5\t0.5
 Fam5\tInd5\t0.5\t1.0\t1.0
 Fam6\tInd6\t0.6\t0.1\t0.2""")
-        f.close()
+
         filenames.append(filename)
 
         filename = "%s_mch.sample" % (prefix)
@@ -204,8 +220,10 @@ class TestIteration(TestBase):
         super(TestIteration, self).setUp()
         # This class deals with a different set of files for header/pedigree information
         # We want some individuals with data missing on both sides
+        self.header.close()
         self.header = open(self.filenames[4])
-        self.ped = [l.strip() for l in open(self.filenames[5]).readlines()]
+        
+        self.ped = get_lines(self.filenames[5])
 
         self.phenotypes = [[ 0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
                            [ 1.0, 0.5, 0.6, 0.5, 1.0, 0.1],
@@ -291,7 +309,7 @@ class TestIteration(TestBase):
     def testIndIdsIID(self):
         PhenoCovar.id_encoding = PhenoIdFormat.IID
 
-        ped = [l.strip() for l in open(self.filenames[2]).readlines()]
+        ped = get_lines(self.filenames[2])
         pc = PhenoCovar()
         load_pedigree(pc, ped)
 
@@ -301,7 +319,7 @@ class TestIteration(TestBase):
 
     def testIndIdsFID(self):
         PhenoCovar.id_encoding = PhenoIdFormat.FID
-        ped = [l.strip() for l in open(self.filenames[2]).readlines()]
+        ped = get_lines(self.filenames[2])
         pc = PhenoCovar()
         load_pedigree(pc, ped)
 
@@ -397,8 +415,10 @@ class TestMismatchedIDs(TestBase):
     def setUp(self):
         super(TestMismatchedIDs, self).setUp()
         # This class deals with a different set of files for header/pedigree information
+        
+        self.header.close()
         self.header = open(self.filenames[6])
-        self.ped = [l.strip() for l in open(self.filenames[5]).readlines()]
+        self.ped = get_lines(self.filenames[5])
         self.pheno = [0.1, 0.4, 1.0, 0.5, 0.9, 1.0, PhenoCovar.missing_encoding, 0.9]
         self.sex   = [1, 1, 2, 2, 1, 1, 2, 1]
 
@@ -418,14 +438,14 @@ class TestMismatchedIDs(TestBase):
         self.assertEqual(1, len(pc.phenotype_names))
         self.assertEqual("Pheno-1", pc.phenotype_names[0])
 
-        for idx in xrange(0, len(self.pheno)):
+        for idx in range(0, len(self.pheno)):
             self.assertAlmostEqual(self.pheno[idx], pc.phenotype_data[0][idx])
             self.assertEqual(self.sex[idx], pc.covariate_data[0][idx])
 
         pc.load_phenofile(self.header)
         self.assertEqual("BMI", pc.phenotype_names[0])
         pheno =  [0.9, 1.0, 0.4, 0.8, 1, 0.1, PhenoCovar.missing_encoding, PhenoCovar.missing_encoding]
-        for idx in xrange(0, len(pheno)):
+        for idx in range(0, len(pheno)):
             self.assertAlmostEqual(pheno[idx], pc.phenotype_data[0][idx])
 
 
@@ -440,7 +460,7 @@ class TestMismatchedIDs(TestBase):
         self.assertEqual(1, len(pc.phenotype_names))
         self.assertEqual("Pheno-1", pc.phenotype_names[0])
 
-        for idx in xrange(0, len(self.pheno)):
+        for idx in range(0, len(self.pheno)):
             self.assertAlmostEqual(self.pheno[idx], pc.phenotype_data[0][idx])
             self.assertEqual(self.sex[idx], pc.covariate_data[0][idx])
 
@@ -448,7 +468,7 @@ class TestMismatchedIDs(TestBase):
         self.assertEqual("BMI", pc.covariate_labels[1])
         self.assertEqual("SEX", pc.covariate_labels[0])
         covar =  [0.9, 1.0, 0.4, 0.8, 1, 0.1, PhenoCovar.missing_encoding, PhenoCovar.missing_encoding]
-        for idx in xrange(0, len(covar)):
+        for idx in range(0, len(covar)):
             self.assertAlmostEqual(self.sex[idx], pc.covariate_data[0][idx])
             self.assertAlmostEqual(covar[idx], pc.covariate_data[1][idx])
             self.assertAlmostEqual(self.pheno[idx], pc.phenotype_data[0][idx])
@@ -474,6 +494,7 @@ F4\tI6\t0.6\t0.1\t0.2""")
             pc = PhenoCovar()
             load_pedigree(pc, self.ped)
             pc.load_covarfile(file, indices=[1])
+        file.close()
 
 
 
@@ -538,7 +559,9 @@ class TestPedigreePopulating(TestBase):
 
         pc = PhenoCovar()
         load_pedigree(pc, self.ped)
-        pc.load_phenofile(open(self.filenames[4]), indices=[1,2])
+        
+        with open(self.filenames[4]) as f:
+            pc.load_phenofile(f, indices=[1,2])
         self.assertEqual(2, len(pc.phenotype_data))
         self.assertEqual(1, len(pc.covariate_data))
         self.assertEqual(6, len(pc.phenotype_data[0]))
@@ -553,7 +576,9 @@ class TestPedigreePopulating(TestBase):
             self.assertEqual(p1, pc.phenotype_data[0][index])
             self.assertEqual(p2, pc.phenotype_data[1][index])
             index += 1
-        pc.load_phenofile(open(self.filenames[4]), indices=[1,2,3])
+            
+        with open(self.filenames[4]) as f:
+            pc.load_phenofile(f, indices=[1,2,3])
         self.assertEqual(3, len(pc.phenotype_data))
         self.assertEqual(1, len(pc.covariate_data))
         self.assertEqual(6, len(pc.phenotype_data[0]))
@@ -574,7 +599,8 @@ class TestPedigreePopulating(TestBase):
 
         pc = PhenoCovar()
         load_pedigree(pc, self.ped)
-        pc.load_phenofile(open(self.filenames[8]), indices=[1,2], sample_file=True)
+        with open(self.filenames[8]) as f:
+            pc.load_phenofile(f, indices=[1,2], sample_file=True)
         self.assertEqual(2, len(pc.phenotype_data))
         self.assertEqual(1, len(pc.covariate_data))
         self.assertEqual(6, len(pc.phenotype_data[0]))
@@ -589,7 +615,9 @@ class TestPedigreePopulating(TestBase):
             self.assertEqual(p1, pc.phenotype_data[0][index])
             self.assertEqual(p2, pc.phenotype_data[1][index])
             index += 1
-        pc.load_phenofile(open(self.filenames[8]), indices=[1,2,3], sample_file=True)
+            
+        with open(self.filenames[8]) as f:
+            pc.load_phenofile(f, indices=[1,2,3], sample_file=True)
         self.assertEqual(3, len(pc.phenotype_data))
         self.assertEqual(1, len(pc.covariate_data))
         self.assertEqual(6, len(pc.phenotype_data[0]))
@@ -618,8 +646,10 @@ class TestPhenoWithMissing(TestBase):
 
         pc = PhenoCovar()
         load_pedigree(pc, self.ped)
-        pc.load_phenofile(open(self.filenames[7]), indices=[1])
-        pc.load_covarfile(open(self.filenames[7]), indices=[2,3])
+        with open(self.filenames[7]) as f:
+            pc.load_phenofile(f, indices=[1])
+        with open(self.filenames[7]) as f:
+            pc.load_covarfile(f, indices=[2,3])
 
         missing = [True,  True,  True, False, False, False]
         index = 0
@@ -656,7 +686,7 @@ class TestCovarSingleCol(TestBase):
 
 
         covar_values = [0.9, 1.0, 0.4, 0.8, 1, 0.1]
-        for idx in xrange(0, len(covar_values)):
+        for idx in range(0, len(covar_values)):
             self.assertAlmostEqual(covar_values[idx], pc.covariate_data[0][idx])
 
         PhenoCovar.sex_as_covariate = True
@@ -673,7 +703,7 @@ class TestCovarSingleCol(TestBase):
         self.assertEqual("Cov-1", pc.covariate_labels[1])
 
         sex = [1,1,2,2,1,1]
-        for idx in xrange(0, len(covar_values)):
+        for idx in range(0, len(covar_values)):
             self.assertAlmostEqual(sex[idx], pc.covariate_data[0][idx])
             self.assertAlmostEqual(covar_values[idx], pc.covariate_data[1][idx])
 
@@ -690,7 +720,7 @@ class TestCovarSingleCol(TestBase):
         self.assertEqual("BMI", pc.covariate_labels[0])
 
         covariate_values = [0.9, 1.0, 0.4, 0.8, 1, 0.1]
-        for idx in xrange(0, len(covariate_values)):
+        for idx in range(0, len(covariate_values)):
             self.assertAlmostEqual(covariate_values[idx], pc.covariate_data[0][idx])
 
 
@@ -708,7 +738,7 @@ class TestCovarSingleCol(TestBase):
         sex = [1,1,2,2,1,1]
         covariate_values = [0.9, 1.0, 0.4, 0.8, 1, 0.1]
 
-        for idx in xrange(0, len(covariate_values)):
+        for idx in range(0, len(covariate_values)):
             self.assertEqual(sex[idx], pc.covariate_data[0][idx])
             self.assertAlmostEqual(covariate_values[idx], pc.covariate_data[1][idx])
 
@@ -727,7 +757,7 @@ class TestCovarSingleCol(TestBase):
         self.assertEqual("BMI", pc.covariate_labels[0])
 
         covariate_values = [0.9, 1.0, 0.4, 0.8, 1, 0.1]
-        for idx in xrange(0, len(covariate_values)):
+        for idx in range(0, len(covariate_values)):
             self.assertAlmostEqual(covariate_values[idx], pc.covariate_data[0][idx])
 
 
@@ -745,10 +775,11 @@ class TestCovarSingleCol(TestBase):
         sex = [1,1,2,2,1,1]
         covariate_values = [0.9, 1.0, 0.4, 0.8, 1, 0.1]
 
-        for idx in xrange(0, len(covariate_values)):
+        for idx in range(0, len(covariate_values)):
             self.assertEqual(sex[idx], pc.covariate_data[0][idx])
             self.assertAlmostEqual(covariate_values[idx], pc.covariate_data[1][idx])
 
+        file.close()
     def test_covar_header_with_empty_names(self):
         pc = PhenoCovar()
         load_pedigree(pc, self.ped)
@@ -787,7 +818,7 @@ class TestPhenoSingleCol(TestBase):
         self.assertEqual("Pheno-1", pc.phenotype_names[0])
 
         phenotype_values = [0.9, 1.0, 0.4, 0.8, 1, 0.1]
-        for idx in xrange(0, len(phenotype_values)):
+        for idx in range(0, len(phenotype_values)):
             self.assertAlmostEqual(phenotype_values[idx], pc.phenotype_data[0][idx])
 
     def test_pheno_header(self):
@@ -801,7 +832,7 @@ class TestPhenoSingleCol(TestBase):
         self.assertEqual("BMI", pc.phenotype_names[0])
 
         phenotype_values = [0.9, 1.0, 0.4, 0.8, 1, 0.1]
-        for idx in xrange(0, len(phenotype_values)):
+        for idx in range(0, len(phenotype_values)):
             self.assertAlmostEqual(phenotype_values[idx], pc.phenotype_data[0][idx])
 
     def test_pheno_header_with_empty_names(self):
@@ -841,13 +872,14 @@ class TestPhenoSingleCol(TestBase):
 
 class TestCovarMultiCol(TestBase):
     def testCovarNoHeader(self):
-        self.ped = [l.strip() for l in open(self.filenames[2]).readlines()]
+        self.ped = get_lines(self.filenames[2])
         # Indicate that we want to use sex as a covariate
         PhenoCovar.sex_as_covariate = True
 
         pc = PhenoCovar()
         load_pedigree(pc, self.ped)
-        pc.load_covarfile(open(self.filenames[3]), indices=[2,3])
+        with open(self.filenames[3]) as f:
+            pc.load_covarfile(f, indices=[2,3])
         self.assertEqual(1, len(pc.phenotype_data))
         self.assertEqual(3, len(pc.covariate_data))
         self.assertEqual(6, len(pc.covariate_data[0]))
@@ -875,7 +907,8 @@ class TestCovarMultiCol(TestBase):
         pc = PhenoCovar()
         load_pedigree(pc, self.ped)
 
-        pc.load_covarfile(open(self.filenames[3]), indices=[1,2,3])
+        with open(self.filenames[3]) as f:
+            pc.load_covarfile(f, indices=[1,2,3])
         self.assertEqual(1, len(pc.phenotype_data))
         self.assertEqual(3, len(pc.covariate_data))
         self.assertEqual(6, len(pc.covariate_data[0]))
@@ -892,7 +925,8 @@ class TestCovarMultiCol(TestBase):
         PhenoCovar.sex_as_covariate = True
         pc = PhenoCovar()
         load_pedigree(pc, self.ped)
-        pc.load_covarfile(open(self.filenames[3]), indices=[2,3])
+        with open(self.filenames[3]) as f:
+            pc.load_covarfile(f, indices=[2,3])
         self.assertEqual(1, len(pc.phenotype_data))
         self.assertEqual(3, len(pc.covariate_data))
         self.assertEqual(6, len(pc.covariate_data[0]))
@@ -910,14 +944,15 @@ class TestCovarMultiCol(TestBase):
             index += 1
 
     def testCovarNoSex(self):
-        self.ped = [l.strip() for l in open(self.filenames[2]).readlines()]
+        self.ped = get_lines(self.filenames[2])
 
         # Indicate that we want to use sex as a covariate
         PhenoCovar.sex_as_covariate = False
 
         pc = PhenoCovar()
         load_pedigree(pc, self.ped)
-        pc.load_covarfile(open(self.filenames[4]), indices=[2,3])
+        with open(self.filenames[4]) as f:
+            pc.load_covarfile(f, indices=[2,3])
         self.assertEqual(1, len(pc.phenotype_data))
         self.assertEqual(2, len(pc.covariate_data))
         self.assertEqual(6, len(pc.covariate_data[0]))
@@ -935,7 +970,8 @@ class TestCovarMultiCol(TestBase):
 
         pc = PhenoCovar()
         load_pedigree(pc, self.ped)
-        pc.load_covarfile(open(self.filenames[4]), indices=[1,2,3])
+        with open(self.filenames[4]) as f:
+            pc.load_covarfile(f, indices=[1,2,3])
         self.assertEqual(1, len(pc.phenotype_data))
         self.assertEqual(3, len(pc.covariate_data))
         self.assertEqual(6, len(pc.covariate_data[0]))
@@ -952,7 +988,9 @@ class TestCovarMultiCol(TestBase):
         PhenoCovar.sex_as_covariate = True
         pc = PhenoCovar()
         load_pedigree(pc, self.ped)
-        pc.load_covarfile(open(self.filenames[4]), indices=[2,3])
+        
+        with open(self.filenames[4]) as f:
+            pc.load_covarfile(f, indices=[2,3])
         self.assertEqual(1, len(pc.phenotype_data))
         self.assertEqual(3, len(pc.covariate_data))
         self.assertEqual(6, len(pc.covariate_data[0]))
@@ -972,13 +1010,14 @@ class TestCovarMultiCol(TestBase):
 
 class TestPhenoMultiCol(TestBase):
     def testMultiPhenoHeader(self):
-        self.ped = [l.strip() for l in open(self.filenames[2]).readlines()]
+        self.ped = get_lines(self.filenames[2])
         # Indicate that we want to use sex as a covariate
         PhenoCovar.sex_as_covariate = True
 
         pc = PhenoCovar()
         load_pedigree(pc, self.ped)
-        pc.load_phenofile(open(self.filenames[4]), indices=[2,3])
+        with open(self.filenames[4]) as f:
+            pc.load_phenofile(f, indices=[2,3])
         self.assertEqual(2, len(pc.phenotype_data))
         self.assertEqual(1, len(pc.covariate_data))
         self.assertEqual(6, len(pc.phenotype_data[0]))
@@ -1007,7 +1046,8 @@ class TestPhenoMultiCol(TestBase):
 
         pc = PhenoCovar()
         load_pedigree(pc, self.ped)
-        pc.load_phenofile(open(self.filenames[3]), indices=[2,3])
+        with open(self.filenames[3]) as f:
+            pc.load_phenofile(f, indices=[2,3])
         self.assertEqual(2, len(pc.phenotype_data))
         self.assertEqual(1, len(pc.covariate_data))
         self.assertEqual(6, len(pc.phenotype_data[0]))
@@ -1020,7 +1060,9 @@ class TestPhenoMultiCol(TestBase):
             self.assertEqual(p2, pc.phenotype_data[0][index])
             self.assertEqual(p3, pc.phenotype_data[1][index])
             index += 1
-        pc.load_phenofile(open(self.filenames[3]), indices=[1,2,3])
+            
+        with open(self.filenames[3]) as f:
+            pc.load_phenofile(f, indices=[1,2,3])
         self.assertEqual(3, len(pc.phenotype_data))
         self.assertEqual(1, len(pc.covariate_data))
         self.assertEqual(6, len(pc.phenotype_data[0]))
