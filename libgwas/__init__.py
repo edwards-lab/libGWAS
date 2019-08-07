@@ -186,3 +186,16 @@ def BuildReportLine(key, value, offset=None):
         return reportline + "%*s" % (offset - 1 + len(str(value)), str(value))
     except:
         return reportline + "%*s" % (offset - 1 + len(value), value)
+
+def get_lines(fn, split=False):
+    '''Simplify very basic file loading, where we just stash the contents into a list'''
+    lines = []
+    
+    with open(fn) as f:
+        for line in f:
+            if split:
+                lines.append(line.strip().split())
+            else:
+                lines.append(line.strip())
+            
+    return lines

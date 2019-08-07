@@ -54,8 +54,6 @@ class TestBase(unittest.TestCase):
         # the faked pheno/covariate non-missing
         self.non_missing    = numpy.array([1,1,1,1,1,1,1,1,1,1,1,1]) == 1
 
-
-
         DataParser.boundary = BoundaryCheck()
 
     def tearDown(self):
@@ -619,7 +617,7 @@ class TestPedFilesTPed(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.split() for x in open(self.tped_filename).readlines()]
+        pedigree = get_lines(self.tped_filename, split=True)
 
         index = 4
         loci = ped_parser.get_loci()
@@ -655,7 +653,8 @@ class TestPedFilesTPed(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.split() for x in open(self.tped_filename).readlines()]
+        pedigree = get_lines(self.tped_filename, split=True)
+
         index = 0
         loci = ped_parser.get_loci()
         for snp in loci:
@@ -689,7 +688,8 @@ class TestPedFilesTPed(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.split() for x in open(self.tped_filename).readlines()]
+        pedigree = get_lines(self.tped_filename, split=True)
+
         index = 4
         loci = ped_parser.get_loci()
         for snp in loci:
@@ -724,7 +724,7 @@ class TestPedFilesTPed(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.split() for x in open(self.tped_filename).readlines()]
+        pedigree = get_lines(self.tped_filename, split=True)
         index = 4
         loci = ped_parser.get_loci()
         for snp in loci:
@@ -758,7 +758,8 @@ class TestPedFilesTPed(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.split() for x in open(self.tped_filename).readlines()]
+        pedigree = get_lines(self.tped_filename, split=True)
+
         index = 4
         loci = ped_parser.get_loci()
         for snp in loci:
@@ -798,8 +799,8 @@ class TestPedFilesTPedVariedColumns(TestBase):
         DataParser.has_liability = self.has_liability
     # Test to make sure we can load everything
     def testTPedNoFamID(self):
-        f = open(self.tfam_filename, "w")
-        f.write("""1 0 0 1 0.1
+        with open(self.tfam_filename, "w") as f:
+            f.write("""1 0 0 1 0.1
 2 0 0 1 0.4
 3 0 0 2 1.0
 4 0 0 2 0.5
@@ -812,16 +813,14 @@ class TestPedFilesTPedVariedColumns(TestBase):
 11 0 0 1 0.9
 12 0 0 1 1.0""")
 
-
-        f.close()
         DataParser.has_fid = False
         pc = PhenoCovar()
         ped_parser = TransposedPedigreeParser(self.tfam_filename, self.tped_filename)
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.strip().split() for x in open(self.tped_filename).readlines()]
-
+        pedigree = get_lines(self.tped_filename, split=True)
+        
         index = 0
         for snp in ped_parser:
             for y in pc:
@@ -840,8 +839,8 @@ class TestPedFilesTPedVariedColumns(TestBase):
         self.assertEqual(7, index)
 
     def testTPedNoSex(self):
-        f = open(self.tfam_filename, "w")
-        f.write("""1 1 0 0 0.1
+        with open(self.tfam_filename, "w") as f:
+            f.write("""1 1 0 0 0.1
 2 2 0 0 0.4
 3 3 0 0 1.0
 4 4 0 0 0.5
@@ -855,14 +854,13 @@ class TestPedFilesTPedVariedColumns(TestBase):
 12 12 0 0 1.0""")
 
 
-        f.close()
         DataParser.has_sex = False
         pc = PhenoCovar()
         ped_parser = TransposedPedigreeParser(self.tfam_filename, self.tped_filename)
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.strip().split() for x in open(self.tped_filename).readlines()]
+        pedigree = get_lines(self.tped_filename, split=True)
 
         index = 0
         for snp in ped_parser:
@@ -881,8 +879,8 @@ class TestPedFilesTPedVariedColumns(TestBase):
         self.assertEqual(7, index)
 
     def testTPedNoParents(self):
-        f = open(self.tfam_filename, "w")
-        f.write("""1 1 1 0.1
+        with open(self.tfam_filename, "w") as f:
+            f.write("""1 1 1 0.1
 2 2 1 0.4
 3 3 2 1.0
 4 4 2 0.5
@@ -896,14 +894,13 @@ class TestPedFilesTPedVariedColumns(TestBase):
 12 12 1 1.0""")
 
 
-        f.close()
         DataParser.has_parents = False
         pc = PhenoCovar()
         ped_parser = TransposedPedigreeParser(self.tfam_filename, self.tped_filename)
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.strip().split() for x in open(self.tped_filename).readlines()]
+        pedigree = get_lines(self.tped_filename, split=True)
 
         index = 0
         for snp in ped_parser:
@@ -924,8 +921,8 @@ class TestPedFilesTPedVariedColumns(TestBase):
 
 
     def testTPedNopheno(self):
-        f = open(self.tfam_filename, "w")
-        f.write("""1 1 0 0 1
+        with open(self.tfam_filename, "w") as f:
+            f.write("""1 1 0 0 1
 2 2 0 0 1
 3 3 0 0 2
 4 4 0 0 2
@@ -937,14 +934,14 @@ class TestPedFilesTPedVariedColumns(TestBase):
 10 10 0 0 2
 11 11 0 0 1
 12 12 0 0 1""")
-        f.close()
+
         DataParser.has_pheno = False
         pc = PhenoCovar()
         ped_parser = TransposedPedigreeParser(self.tfam_filename, self.tped_filename)
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.strip().split() for x in open(self.tped_filename).readlines()]
+        pedigree = get_lines(self.tped_filename, split=True)
 
         index = 0
         for snp in ped_parser:
@@ -964,8 +961,8 @@ class TestPedFilesTPedVariedColumns(TestBase):
 
 
     def testTPedLiability(self):
-        f = open(self.tfam_filename, "w")
-        f.write("""1 1 0 0 1 0.1 1
+        with open(self.tfam_filename, "w") as f:
+            f.write("""1 1 0 0 1 0.1 1
 2 2 0 0 1 0.4 1
 3 3 0 0 2 1.0 1
 4 4 0 0 2 0.5 1
@@ -977,7 +974,6 @@ class TestPedFilesTPedVariedColumns(TestBase):
 10 10 0 0 2 0.5 1
 11 11 0 0 1 0.9 1
 12 12 0 0 1 1.0 1""")
-        f.close()
 
         DataParser.has_liability = True
         pc = PhenoCovar()
@@ -985,7 +981,7 @@ class TestPedFilesTPedVariedColumns(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.strip().split() for x in open(self.tped_filename).readlines()]
+        pedigree = get_lines(self.tped_filename, split=True)
 
         index = 0
         for snp in ped_parser:
@@ -1004,11 +1000,9 @@ class TestPedFilesTPedVariedColumns(TestBase):
         self.assertEqual(7, index)
 
 
-
-
     def testTPedNoFamIDSex(self):
-        f = open(self.tfam_filename, "w")
-        f.write("""1 0 0 0.1
+        with open(self.tfam_filename, "w") as f:
+            f.write("""1 0 0 0.1
 2 0 0 0.4
 3 0 0 1.0
 4 0 0 0.5
@@ -1022,8 +1016,6 @@ class TestPedFilesTPedVariedColumns(TestBase):
 12 0 0 1.0""")
 
 
-        f.close()
-
         DataParser.has_fid = False
         DataParser.has_sex = False
         pc = PhenoCovar()
@@ -1031,7 +1023,7 @@ class TestPedFilesTPedVariedColumns(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.strip().split() for x in open(self.tped_filename).readlines()]
+        pedigree = get_lines(self.tped_filename, split=True)
 
         index = 0
         for snp in ped_parser:
@@ -1051,8 +1043,8 @@ class TestPedFilesTPedVariedColumns(TestBase):
         self.assertEqual(7, index)
 
     def testTPedNoParentsPheno(self):
-        f = open(self.tfam_filename, "w")
-        f.write("""1 1 1
+        with open(self.tfam_filename, "w") as f:
+            f.write("""1 1 1
 2 2 1
 3 3 2
 4 4 2
@@ -1065,9 +1057,6 @@ class TestPedFilesTPedVariedColumns(TestBase):
 11 11 1
 12 12 1""")
 
-
-        f.close()
-
         DataParser.has_parents = False
         DataParser.has_pheno   = False
         pc = PhenoCovar()
@@ -1075,7 +1064,7 @@ class TestPedFilesTPedVariedColumns(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.strip().split() for x in open(self.tped_filename).readlines()]
+        pedigree = get_lines(self.tped_filename, split=True)
 
         index = 0
         for snp in ped_parser:
@@ -1101,7 +1090,7 @@ class TestTPedFileNegPos(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.strip().split() for x in open(self.misssnp_tped_filename).readlines()]
+        pedigree = get_lines(self.misssnp_tped_filename, split=True)
 
         index = 2
         for snp in ped_parser:
@@ -1126,7 +1115,7 @@ class TestTPedFileNegPos(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.strip().split() for x in open(self.misssnp_tped_filename).readlines()]
+        pedigree = get_lines(self.misssnp_tped_filename, split=True)
 
         index = 4
         for snp in ped_parser:
@@ -1152,7 +1141,7 @@ class TestTPedFileNegPos(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.strip().split() for x in open(self.misssnp_tped_filename).readlines()]
+        pedigree = get_lines(self.misssnp_tped_filename, split=True)
 
         index = 2
         for snp in ped_parser:
@@ -1179,7 +1168,7 @@ class TestTPedFileNegPos(TestBase):
         ped_parser.load_tfam(pc)
         ped_parser.load_genotypes()
 
-        pedigree = [x.strip().split() for x in open(self.misssnp_tped_filename).readlines()]
+        pedigree = get_lines(self.misssnp_tped_filename, split=True)
 
         index = 2
         for snp in ped_parser:
