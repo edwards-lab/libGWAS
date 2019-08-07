@@ -119,7 +119,7 @@ class TestBase(unittest.TestCase):
         self.mafs = numpy.zeros(len(base_freq) * 2)
 
         info_file = open(self.info_file1, 'w')
-        print >> info_file, "snp_id rs_id position exp_freq_a1 info certainty type info_type0 concord_type0 r2_type0"
+        print("snp_id rs_id position exp_freq_a1 info certainty type info_type0 concord_type0 r2_type0", file=info_file)
 
         self.chroms = [ int(x) for x in ['1'] * 7 + ['2'] * 7 + ['3'] * 6]
         self.positions = [1012, 1020, 1026, 1032, 1100, 1137, 1149] * 2 + [1012, 1020, 1026, 1032, 1100, 1137]
@@ -137,16 +137,16 @@ class TestBase(unittest.TestCase):
             aa = maf * maf
             dosages[idx] = Aa + 2*AA
             mafs += dosages[idx] / 2
-            print >> gen_file, "\t".join([
+            print("\t".join([
                 ind,
                 "DOSE"] +
                 ["%.3f" % x for x in dosages[idx]]
-            )
-            print >> uncmp_file, "\t".join([
+            ), file=gen_file)
+            print("\t".join([
                 ind,
                 "DOSE"] +
                 ["%.3f" % x for x in dosages[idx]]
-            )
+            ), file=uncmp_file)
             idx += 1
         self.mafs[0:10] = mafs/10
         self.dosage_encoding[0:10,:] = numpy.transpose(dosages)
@@ -154,10 +154,10 @@ class TestBase(unittest.TestCase):
         uncmp_file.close()
         info_file = gzip.open(self.info_file1, 'wb')
         info_ufile = open(self.info_ucmp1, 'w')
-        print >> info_file, "SNP\tAl1\tAl2\tFreq1\tMAF\tAvgCall\tRsq\tGenotyped\tLooRsq\tEmpR\tEmpRsq\tDose1\tdose2"
-        print >> info_ufile, "SNP\tAl1\tAl2\tFreq1\tMAF\tAvgCall\tRsq\tGenotyped\tLooRsq\tEmpR\tEmpRsq\tDose1\tdose2"
+        print("SNP\tAl1\tAl2\tFreq1\tMAF\tAvgCall\tRsq\tGenotyped\tLooRsq\tEmpR\tEmpRsq\tDose1\tdose2", file=info_file)
+        print("SNP\tAl1\tAl2\tFreq1\tMAF\tAvgCall\tRsq\tGenotyped\tLooRsq\tEmpR\tEmpRsq\tDose1\tdose2", file=info_ufile)
         for idx in range(0, 10):
-            print >> info_file, "\t".join([
+            print("\t".join([
                 "%s:%d" % (self.chroms[idx],self.positions[idx]),
                 self.allele_1[idx],
                 self.allele_2[idx],
@@ -166,8 +166,8 @@ class TestBase(unittest.TestCase):
                 '0.99912',
                 '0.8',
                 "\t".join(['-'] * 6)
-            ])
-            print >> info_ufile, "\t".join([
+            ]), file=info_file)
+            print("\t".join([
                 "%s:%d" % (self.chroms[idx],self.positions[idx]),
                 self.allele_1[idx],
                 self.allele_2[idx],
@@ -176,7 +176,7 @@ class TestBase(unittest.TestCase):
                 '0.99912',
                 '0.8',
                 "\t".join(['-'] * 6)
-            ])
+            ]), file=info_ufile)
         info_file.close()
         info_ufile.close()
 
@@ -196,16 +196,16 @@ class TestBase(unittest.TestCase):
             Aa = 2 * f * maf
             aa = maf * maf
             dosages[idx] = Aa + 2*aa
-            print >> gen_file, "\t".join([
+            print("\t".join([
                 ind,
                 "DOSE"] +
                 ["%.3f" % x for x in dosages[idx]]
-            )
-            print >> uncmp_file, "\t".join([
+            ), file=gen_file)
+            print("\t".join([
                 ind,
                 "DOSE"] +
                 ["%.3f" % x for x in dosages[idx]]
-            )
+            ), file=uncmp_file)
             idx += 1
         self.mafs[10:] = mafs/10
         self.dosage_encoding[10:,:] = numpy.transpose(dosages)
@@ -214,10 +214,10 @@ class TestBase(unittest.TestCase):
 
         info_file = gzip.open(self.info_file2, 'wb')
         info_cfile = open(self.info_ucmp2, 'w')
-        print >> info_file, "SNP\tAl1\tAl2\tFreq1\tMAF\tAvgCall\tRsq\tGenotyped\tLooRsq\tEmpR\tEmpRsq\tDose1\tdose2"
-        print >> info_cfile, "SNP\tAl1\tAl2\tFreq1\tMAF\tAvgCall\tRsq\tGenotyped\tLooRsq\tEmpR\tEmpRsq\tDose1\tdose2"
+        print("SNP\tAl1\tAl2\tFreq1\tMAF\tAvgCall\tRsq\tGenotyped\tLooRsq\tEmpR\tEmpRsq\tDose1\tdose2", file=info_file)
+        print("SNP\tAl1\tAl2\tFreq1\tMAF\tAvgCall\tRsq\tGenotyped\tLooRsq\tEmpR\tEmpRsq\tDose1\tdose2", file=info_cfile)
         for idx in range(10, 20):
-            print >> info_file, "\t".join([
+            print("\t".join([
                 "%s:%d" % (self.chroms[idx],self.positions[idx]),
                 self.allele_1[idx],
                 self.allele_2[idx],
@@ -226,8 +226,8 @@ class TestBase(unittest.TestCase):
                 '0.99912',
                 '0.8',
                 "\t".join(['-'] * 6)
-            ])
-            print >> info_cfile, "\t".join([
+            ]), file=info_file)
+            print("\t".join([
                 "%s:%d" % (self.chroms[idx],self.positions[idx]),
                 self.allele_1[idx],
                 self.allele_2[idx],
@@ -236,7 +236,7 @@ class TestBase(unittest.TestCase):
                 '0.99912',
                 '0.8',
                 "\t".join(['-'] * 6)
-            ])
+            ]), file=info_cfile)
         info_cfile.close()
         info_file.close()
 

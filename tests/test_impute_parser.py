@@ -93,7 +93,7 @@ class TestBase(unittest.TestCase):
 
         self.fam_file = "%s.gen_samples" % (prefix)
         fam_file = open(self.fam_file, 'w')
-        print >> fam_file, """ID_1 ID_2 missing father mother sex plink_pheno
+        print("""ID_1 ID_2 missing father mother sex plink_pheno
     0 0 0 D D D B
     ID0001 FAM001 0 0 0 1 0.1
     ID0002 FAM002 0 0 0 2 0.4
@@ -106,7 +106,7 @@ class TestBase(unittest.TestCase):
     ID0009 FAM009 0 0 0 2 1.0
     ID0010 FAM010 0 0 0 2 0.5
     ID0011 FAM011 0 0 0 2 0.9
-    ID0012 FAM012 0 0 0 1 1.0"""
+    ID0012 FAM012 0 0 0 1 1.0""", file=fam_file)
         fam_file.close()
         self.ind_ids = ["ID0001:FAM001",
                         "ID0002:FAM002",
@@ -142,7 +142,7 @@ class TestBase(unittest.TestCase):
         certainty = [0.2 * (x%5) + 0.05 for x in range(0, 20)]
 
         info_file = open(self.info_file1, 'w')
-        print >> info_file, "snp_id rs_id position exp_freq_a1 info certainty type info_type0 concord_type0 r2_type0"
+        print("snp_id rs_id position exp_freq_a1 info certainty type info_type0 concord_type0 r2_type0", file=info_file)
 
         for base in base_freq:
             f = numpy.random.normal(loc=base, scale=0.1, size=12)
@@ -161,23 +161,23 @@ class TestBase(unittest.TestCase):
             line = numpy.hstack((AA.reshape(-1, 1), Aa.reshape(-1, 1), aa.reshape(-1, 1)))
             self.positions.append((10+idx) * 1397)
             self.rsids.append("rs132%d" % (idx * 67))
-            print >> gen_file, "\t".join([
+            print("\t".join([
                                             "--",
                                             self.rsids[-1],
                                             str(self.positions[-1]),
                                             self.allele_1[idx],
                                             self.allele_2[idx]]) + \
                                "\t" + \
-                               "\t".join(["%0.10f" % (x) for x in line.reshape(-1)])
-            print >> uncmp_file, "\t".join([
+                               "\t".join(["%0.10f" % (x) for x in line.reshape(-1)]), file=gen_file)
+            print("\t".join([
                                             "--",
                                             self.rsids[-1],
                                             str(self.positions[-1]),
                                             self.allele_1[idx],
                                             self.allele_2[idx]]) + \
                                "\t" + \
-                               "\t".join(["%0.10f" % (x) for x in line.reshape(-1)])
-            print >> info_file, " ".join([
+                               "\t".join(["%0.10f" % (x) for x in line.reshape(-1)]), file=uncmp_file)
+            print(" ".join([
                                             "--",
                                             self.rsids[-1],
                                             str(self.positions[-1]),
@@ -187,7 +187,7 @@ class TestBase(unittest.TestCase):
                                             "0",
                                             "-1",
                                             "-1",
-                                            "-1"])
+                                            "-1"]), file=info_file)
 
 
             idx += 1
@@ -197,7 +197,7 @@ class TestBase(unittest.TestCase):
         gen_file = gzip.open(self.gen_file2, 'wb')
         uncmp_file = open(self.uncmp_2, 'w')
         info_file = open(self.info_file2, 'w')
-        print >> info_file, "snp_id rs_id position exp_freq_a1 info certainty type info_type0 concord_type0 r2_type0"
+        print("snp_id rs_id position exp_freq_a1 info certainty type info_type0 concord_type0 r2_type0", file=info_file)
         for base in base_freq:
             f = numpy.random.normal(loc=base, scale=0.1, size=12)
             f[f>1.0] = 1.0
@@ -214,23 +214,23 @@ class TestBase(unittest.TestCase):
             line = numpy.hstack((AA.reshape(-1, 1), Aa.reshape(-1, 1), aa.reshape(-1, 1)))
             self.positions.append((10+idx) * 1397)
             self.rsids.append("rs132%d" % (idx * 67))
-            print >> gen_file, "\t".join([
+            print("\t".join([
                                             "--",
                                             self.rsids[-1],
                                             str(self.positions[-1]),
                                             self.allele_1[idx],
                                             self.allele_2[idx]]) + \
                                "\t" + \
-                               "\t".join(["%0.10f" % (x) for x in line.reshape(-1)])
-            print >> uncmp_file, "\t".join([
+                               "\t".join(["%0.10f" % (x) for x in line.reshape(-1)]), file=gen_file)
+            print("\t".join([
                                             "--",
                                             self.rsids[-1],
                                             str(self.positions[-1]),
                                             self.allele_1[idx],
                                             self.allele_2[idx]]) + \
                                "\t" + \
-                               "\t".join(["%0.10f" % (x) for x in line.reshape(-1)])
-            print >> info_file, " ".join([
+                               "\t".join(["%0.10f" % (x) for x in line.reshape(-1)]), file=uncmp_file)
+            print(" ".join([
                                             "--",
                                             self.rsids[-1],
                                             str(self.positions[-1]),
@@ -240,7 +240,7 @@ class TestBase(unittest.TestCase):
                                             "0",
                                             "-1",
                                             "-1",
-                                            "-1"])
+                                            "-1"]), file=info_file)
             idx += 1
         self.impute_parser = impute_parser.Parser(self.fam_file, [self.gen_file], chroms = ["3"])
 
