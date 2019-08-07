@@ -1,10 +1,10 @@
-from data_parser import DataParser
-from parsed_locus import ParsedLocus
-from exceptions import TooManyAlleles
-from exceptions import TooFewAlleles
+from .data_parser import DataParser
+from .parsed_locus import ParsedLocus
+from .exceptions import TooManyAlleles
+from .exceptions import TooFewAlleles
 import gzip
 import numpy
-from pheno_covar import PhenoCovar
+from .pheno_covar import PhenoCovar
 import logging
 
 __copyright__ = "Eric Torstenson"
@@ -118,9 +118,9 @@ class Parser(DataParser):
         """This really just intializes the file by opening it up. """
 
         if DataParser.compressed_pedigree:
-            self.genotype_file = gzip.open("%s.gz" % self.tped_file, 'rb')
+            self.genotype_file = gzip.open("%s.gz" % self.tped_file, 'r')
         else:
-            self.genotype_file = open(self.tped_file)
+            self.genotype_file = open(self.tped_file, 'rt', encoding='ascii')
 
         self.filter_missing()
 
@@ -135,8 +135,12 @@ class Parser(DataParser):
 
         """
         # Get a list of uniq entries in the data, except for missing
-        alleles = list(set(data[4:]) - set(DataParser.missing_representation))
+        alleles = list(set(data[4:]) - set([DataParser.missing_representation]))
         if len(alleles) > 2:
+            print(alleles)
+            print(data[4:])
+            print(DataParser.missing_representation)
+            print((set(data[4:]) - set([b'0'])))
             raise TooManyAlleles(chr=self.chr, rsid=self.rsid, alleles=alleles)
 
         # We don't have a way to know this in advance, so we want to just iterate onward
@@ -195,7 +199,7 @@ class Parser(DataParser):
                 allelic_data = numpy.array(genotypes[4:], dtype="S2").reshape(-1, 2)
                 if missing is None:
                     missing = numpy.zeros(allelic_data.shape[0], dtype='int8')
-                missing += (numpy.sum(0+(allelic_data==DataParser.missing_representation), axis=1)/2)
+                missing += (numpy.sum(0+(allelic_data==DataParser.missing_representation), axis=1) * 0.5).astype(int)
 
 
         if missing is not None:
@@ -213,8 +217,11 @@ class Parser(DataParser):
         """Pour the current data into the iteration object"""
 
         cur_idx = iteration.cur_idx
-        genotypes = self.genotype_file.next().split()
-        iteration.chr, iteration.rsid, junk, iteration.pos = genotypes[0:4]
+        
+        # Let's go ahead and set those alleles as bytes, but
+        # we'll need to fix the rest
+        genotypes = next(self.genotype_file).encode().split()
+        iteration.chr, iteration.rsid, junk, iteration.pos = [x.decode() for x in genotypes[0:4]]
         iteration.chr = int(iteration.chr)
         iteration.pos = int(iteration.pos)
 
@@ -232,7 +239,7 @@ class Parser(DataParser):
                 return True
                 #return iteration.maf >= DataParser.min_maf and iteration.maf <= DataParser.max_maf
             except TooFewAlleles:
-                print "\n\n\nSkipping %s:%s %s %s" % (iteration.chr, iteration.pos, iteration.rsid, cur_idx)
+                print("\n\n\nSkipping %s:%s %s %s" % (iteration.chr, iteration.pos, iteration.rsid, cur_idx))
 
         return False
 
