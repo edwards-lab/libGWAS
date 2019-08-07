@@ -1,9 +1,9 @@
 
 import numpy
-import pheno_covar
+from . import pheno_covar
 
-from exceptions import InvariantVar
-from exceptions import TooMuchMissingpPhenoCovar
+from .exceptions import InvariantVar
+from .exceptions import TooMuchMissingpPhenoCovar
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"

@@ -1,9 +1,9 @@
-from data_parser import DataParser
-from pheno_covar import PhenoCovar
-from boundary import BoundaryCheck
-from parsed_locus import ParsedLocus
-from exceptions import TooManyAlleles
-from exceptions import TooFewAlleles
+from .data_parser import DataParser
+from .pheno_covar import PhenoCovar
+from .boundary import BoundaryCheck
+from .parsed_locus import ParsedLocus
+from .exceptions import TooManyAlleles
+from .exceptions import TooFewAlleles
 import gzip
 import numpy
 import os
@@ -305,10 +305,10 @@ class Parser(DataParser):
 
                 return iteration.maf >= DataParser.min_maf and iteration.maf <= DataParser.max_maf
             else:
-                print >> sys.stderr, "%s:%s %s - Filter: %s" % (iteration.chr,
+                print("%s:%s %s - Filter: %s" % (iteration.chr,
                                                                       iteration.pos,
                                                                       iteration.rsid,
-                                                                      filter)
+                                                                      filter), file=sys.stderr)
                 return False
         return False
 

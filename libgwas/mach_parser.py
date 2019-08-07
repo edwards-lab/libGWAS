@@ -1,18 +1,18 @@
-from data_parser import DataParser
-from parsed_locus import ParsedLocus
+from .data_parser import DataParser
+from .parsed_locus import ParsedLocus
 from . import sys_call
 from . import ExitIf
 import sys
-from exceptions import TooManyAlleles
-from exceptions import TooFewAlleles
+from .exceptions import TooManyAlleles
+from .exceptions import TooFewAlleles
 import gzip
 import numpy
-from exceptions import InvalidSelection
+from .exceptions import InvalidSelection
 import os
 
 import logging
-from pheno_covar import PhenoCovar
-import boundary
+from .pheno_covar import PhenoCovar
+from . import boundary
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"
@@ -322,9 +322,9 @@ class Parser(DataParser):
                 break
 
         if self.dosages.shape[0] != len(self.markers):
-            print >> sys.stderr, "What is going on? I have ", \
+            print("What is going on? I have ", \
                     self.dosages.shape[0], "dosages per individual and ", \
-                    len(self.markers), self.markers
+                    len(self.markers), self.markers, file=sys.stderr)
 
         self.chunk += 1
         self.marker_count = len(self.markers)

@@ -1,15 +1,15 @@
 import struct
 
 import numpy
-import transposed_pedigree_parser
-from data_parser import DataParser
-from parsed_locus import ParsedLocus
+from . import transposed_pedigree_parser
+from .data_parser import DataParser
+from .parsed_locus import ParsedLocus
 from . import Exit
 from . import BuildReportLine
 import sys
 from . import sys_call
 import logging
-from pheno_covar import PhenoCovar
+from .pheno_covar import PhenoCovar
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"

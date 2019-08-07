@@ -1,6 +1,6 @@
 import collections
-from exceptions import InvalidBoundarySpec
-from exceptions import InvalidChromosome
+from .exceptions import InvalidBoundarySpec
+from .exceptions import InvalidChromosome
 from . import BuildReportLine
 import os
 import logging

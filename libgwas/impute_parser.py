@@ -1,14 +1,14 @@
 from . import ExitIf
 from . import BuildReportLine
-from data_parser import DataParser
-from parsed_locus import ParsedLocus
-from pheno_covar import PhenoCovar
-from exceptions import TooManyAlleles
-from exceptions import TooFewAlleles
-import allele_counts
+from .data_parser import DataParser
+from .parsed_locus import ParsedLocus
+from .pheno_covar import PhenoCovar
+from .exceptions import TooManyAlleles
+from .exceptions import TooFewAlleles
+from . import allele_counts
 import gzip
 import numpy
-from exceptions import InvalidSelection
+from .exceptions import InvalidSelection
 import logging
 import os
 
@@ -100,7 +100,7 @@ def gen_dosage_extraction(alleles, rawgeno, non_missing):
         genotypes[a1_mask] = 2
 
     else:
-        print "unexpected encoding: ", encoding
+        print("unexpected encoding: ", encoding)
         sys.exit(1)
     alc = allele_counts.AlleleCounts(genotypes, alleles, non_missing)
     alc.set_allele_counts(a1c, a2c, hetc, sum(additive/2)/float(a1.shape[0]))

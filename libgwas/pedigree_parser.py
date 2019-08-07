@@ -2,13 +2,13 @@ import gzip
 
 import numpy
 
-from data_parser import DataParser
-from exceptions import MalformedInputFile
-from exceptions import TooManyAlleles
-from exceptions import TooFewAlleles
+from .data_parser import DataParser
+from .exceptions import MalformedInputFile
+from .exceptions import TooManyAlleles
+from .exceptions import TooFewAlleles
 from . import sys_call
 from . import BuildReportLine
-from pheno_covar import PhenoCovar
+from .pheno_covar import PhenoCovar
 import logging
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
@@ -247,11 +247,11 @@ class Parser(DataParser):
         valid_allele_list = []
         allele_count2s = []
 
-        for i in xrange(0, snp_count):
+        for i in range(0, snp_count):
             valid = True
             snp_geno = allelic_data[:,i]
             alleles, allele_counts = numpy.unique(snp_geno, return_counts=True)
-            allele_counts = dict(zip(alleles, allele_counts))
+            allele_counts = dict(list(zip(alleles, allele_counts)))
             alleles = list(set(alleles) - set([DataParser.missing_representation]))
 
             if len(alleles) > 2:

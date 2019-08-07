@@ -1,8 +1,8 @@
-from locus import Locus
-import allele_counts
-from exceptions import InvalidFrequency
-from exceptions import TooMuchMissing
-import data_parser
+from .locus import Locus
+from . import allele_counts
+from .exceptions import InvalidFrequency
+from .exceptions import TooMuchMissing
+from . import data_parser
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"
@@ -86,7 +86,7 @@ class ParsedLocus(Locus):
 
         return alc
 
-    def next(self):
+    def __next__(self):
         """Move to the next valid locus.
 
         Will only return valid loci or exit via StopIteration exception

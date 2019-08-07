@@ -1,5 +1,5 @@
 import numpy
-import data_parser
+from . import data_parser
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"

@@ -1,11 +1,11 @@
-from data_parser import DataParser
-from pheno_covar import PhenoCovar
-from boundary import BoundaryCheck
-from parsed_locus import ParsedLocus
-from exceptions import TooManyAlleles
-from exceptions import TooFewAlleles
+from .data_parser import DataParser
+from .pheno_covar import PhenoCovar
+from .boundary import BoundaryCheck
+from .parsed_locus import ParsedLocus
+from .exceptions import TooManyAlleles
+from .exceptions import TooFewAlleles
 from bgen_reader import read_bgen
-from impute_parser import gen_dosage_extraction
+from .impute_parser import gen_dosage_extraction
 # from exceptions import StopIteration
 import numpy
 import os
@@ -14,8 +14,8 @@ from . import BuildReportLine
 #from . import timer
 import sys
 import bgen_reader
-import impute_parser
-from locus import Locus
+from . import impute_parser
+from .locus import Locus
 import libgwas
 import logging
 
@@ -155,7 +155,7 @@ class Parser(DataParser):
 
     def parse_variant(self, index):
         log = logging.getLogger('bgen_parser::open_bgen')
-        print "--Parse Variants: %d (%d) " % (index, self.markers_raw.shape[0])
+        print("--Parse Variants: %d (%d) " % (index, self.markers_raw.shape[0]))
         if index < self.markers_raw.shape[0]:
             locus = Locus()
             v = self.markers_raw.loc[index]
