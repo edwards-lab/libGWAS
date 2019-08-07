@@ -6,6 +6,8 @@ import subprocess
 import sys
 import numpy
 import exceptions
+import datetime
+import math
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -52,31 +54,34 @@ class Timer:
         self.start = datetime.datetime.now()
         self.last_period = self.start
         self.log = sys.stderr
-        if nf is not None:
+        if fn is not None:
             self.log = open(fn, 'w')
 
     def diff(self):
-        seconds (datetime.datetime.now() - self.start).seconds
-        value = "%ds" % (seconds)
+        tdiff = datetime.datetime.now() - self.start
+        seconds = tdiff.seconds + (int(tdiff.microseconds / 10000) * 0.01 )
+        value = "%0.2fs" % (seconds)
         if seconds > 120:
-            value = "%d:%d" % (math.floor(seconds/60), seconds%60)
+            value = "%d:%0.2f" % (math.floor(seconds/60), seconds%60)
         return value
         
     def period(self):
         now = datetime.datetime.now()
-        seconds = (now - self.start).seconds
-        value = "%ds" % (seconds)
+        tdiff = now - self.last_period
+        seconds = tdiff.seconds + (int(tdiff.microseconds / 10000) * 0.01 )
+        value = "%0.2fs (%s)" % (seconds, self.diff())
         if seconds > 120:
-            value = "%d:%d" % (math.floor(seconds/60), seconds%60)
+            value = "%d:%0.2f (%s)" % (math.floor(seconds/60), seconds%60, self.diff())
         self.last_period = now
         return value
 
     def report_period(self, msg):
-        print("%s %ds" % (msg, self.period(), file=self.log)
-        return f"{msg} {self.period()}s"
+        print >> self.log, "%s %s" % (msg, self.period())
+        self.log.flush()
         
     def report_total(self, msg):
-        print(f"{msg} {self.diff}s", file=self.log)
+        print >> self.log, "%s %s" % (msg, self.diff())
+        self.log.flush()
 
 timer = Timer()
 

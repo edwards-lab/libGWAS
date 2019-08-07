@@ -11,10 +11,12 @@ import numpy
 import os
 from . import ExitIf
 from . import BuildReportLine
+#from . import timer
 import sys
 import bgen_reader
 import impute_parser
 from locus import Locus
+import libgwas
 import logging
 
 __copyright__ = "Eric Torstenson"
@@ -47,6 +49,7 @@ class Parser(DataParser):
     """
     #: The threshold associated with the .info info column
     info_threshold = 0.4
+    het_threshold = 0.8          # Jackie's suggestion. We can switch back to 1.0.
 
     # It is possible that there are no chromosomes in the locus details (such as gen files converted to bgen). In
     # these cases, we assume that the user will be working on a file that has only one chromosome and that
@@ -68,6 +71,7 @@ class Parser(DataParser):
         self.geno_mask = None       # this will be 3x in order to permit masking of rows within the 3xN vector of gt probs
         self.ind_count = -1
         self.bgen_idx = -1
+        self.bgen_start_idx = 0     # We'll mark this for the first locus to be analyzed
 
         self.bgen = None            # This is the buffer where we'll store the output from the current file
         self.markers_raw = None     # raw marker details in DataFrame format
@@ -100,7 +104,7 @@ class Parser(DataParser):
         :param pheno_covar: Phenotype/covariate object
         :return: None
         """
-
+        libgwas.timer.report_period("Loading Family Details")
         self.sample_ids = list(self.bgen['samples']['id'])
 
         artificial_ids = False
@@ -139,22 +143,24 @@ class Parser(DataParser):
 
         self.ind_count = self.ind_mask.shape[0]
         pheno_covar.freeze_subjects()
-
+        libgwas.timer.report_period("Family Details loaded.")
     def open_bgen(self):
-        self.bgen = bgen_reader.read_bgen(self.bgen_filename,
-                                          sample_file=self.sample_filename,
-                                          verbose=False)
-        self.markers_raw = self.bgen['variants']
-
-        self.bgen_idx = 0
+        if self.bgen is None:
+            self.bgen = bgen_reader.read_bgen(self.bgen_filename,
+                                              sample_file=self.sample_filename,
+                                              verbose=False)
+            self.markers_raw = self.bgen['variants']
+            libgwas.timer.report_period("Marker data loaded: %d variants found " % (len(self.markers_raw)))
+        self.bgen_idx = self.bgen_start_idx
 
     def parse_variant(self, index):
         log = logging.getLogger('bgen_parser::open_bgen')
+        print "--Parse Variants: %d (%d) " % (index, self.markers_raw.shape[0])
         if index < self.markers_raw.shape[0]:
             locus = Locus()
             v = self.markers_raw.loc[index]
 
-            locus.chr = v.chrom
+            locus.chr = v.chrom.lstrip("0")
 
             if locus.chr.strip() == "" and Parser.default_chromosome != -1:
                 locus.chr = Parser.default_chromosome
@@ -166,7 +172,9 @@ class Parser(DataParser):
                     locus.rsid = component
             locus.cur_idx = index
             locus.nalleles = v.nalleles
+            #libgwas.timer.report_period("--%s:%d %s" % (str(locus.chr), locus.pos, locus.rsid))
             return locus
+        libgwas.timer.report_period("ParseVariant: %d out of loci to consider" % (index))
         raise StopIteration
 
     # We'll assume that all files that have been associated with this
@@ -178,10 +186,13 @@ class Parser(DataParser):
         self.open_bgen()
         missing = None
         locus_count = 0
+        libgwas.timer.report_period("Loading Genotypes ")
 
         # identify individual's missingness if the threshold is set
         if DataParser.ind_miss_tol < 1.0:
             for locus in self:
+                if DataParser.boundary.BoundaryCompare(BoundaryCheck.get_valid_chrom(iteration.chr), iteration.pos, iteration.rsid) < 0:
+                    self.bgen_start_idx += 1
                 if missing is None:
                     missing = numpy.zeros(locus.genotype_data.shape[0])
 
@@ -193,8 +204,10 @@ class Parser(DataParser):
             self.ind_mask = self.ind_mask | dropped_individuals
 
         valid_individuals = numpy.sum(self.ind_mask==0)
+        self.min_likely_hets = float(valid_individuals) * DataParser.min_maf
 
         self.max_missing_geno = DataParser.snp_miss_tol * float(valid_individuals)
+        libgwas.timer.report_period("Genotypes Loaded. Starting Index: %d. Locus Count: %d" % (self.bgen_start_idx, locus_count))
 
     def get_next_line(self):
         """If we reach the end of the file, we simply open the next, until we \
@@ -224,13 +237,22 @@ class Parser(DataParser):
             iteration.alleles = snpdata.alleles
             nalleles = snpdata.nalleles
             iteration.rsid = snpdata.rsid
+
             if DataParser.boundary.TestBoundary(BoundaryCheck.get_valid_chrom(iteration.chr), iteration.pos, iteration.rsid):
                 iteration.genotype_data = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute(), self.geno_mask).compressed().reshape(-1, 3)
+                libgwas.timer.report_period("-  %d %s:%s - Done"% (self.bgen_idx, iteration.chr, str(iteration.pos)))
                 # Assuming that if we are missing the first dose, then we are missing them all
-                iteration.missing_genotypes = iteration.genotype_data[:, 0] == DataParser.missing_storage
+                likely_hets = numpy.sum(iteration.genotype_data[:, 1] > Parser.het_threshold)
+
+                # Skip over things that are likely to be fixed loci
+                isvalid = likely_hets > self.min_likely_hets
+                if isvalid:
+                    # technically, there is a ploidy value in there someplace which should end up as 0 for data without information
+                    iteration.missing_genotypes = numpy.sum(iteration.genotype_data, axis=1) < 0.1
+                    libgwas.timer.report_period("- missingness identified")
+                return isvalid
 
                 return True
-
         return False
 
 

@@ -164,6 +164,16 @@ class BoundaryCheck(object):
             if len(snp.strip()) > 0:
                 self.ignored_rs.append(snp)
 
+    def BoundaryCompare(self, chr, pos, rsid):
+        """Tests the locus for validity, but returns -1, 0 or 1 depending on whether it is valid less than or greater than the boundary
+        
+        It is important to note that beyond_upper_bound is forced back to False when run"""
+        rval = TestBoundary(chr, pos, rsid)
+        if self.beyond_upper_bound:
+            rval = 1
+        self.beyond_upper_bound = False
+        return rval
+        
     def TestBoundary(self, chr, pos, rsid):
         """Test if locus is within the boundaries and not to be ignored.
 
