@@ -5,7 +5,7 @@ __version__ = '1.1.1'
 import subprocess
 import sys
 import numpy
-import exceptions
+from . import exceptions
 import datetime
 import math
 
@@ -76,11 +76,11 @@ class Timer:
         return value
 
     def report_period(self, msg):
-        print >> self.log, "%s %s" % (msg, self.period())
+        print("%s %s" % (msg, self.period()), file=self.log)
         self.log.flush()
         
     def report_total(self, msg):
-        print >> self.log, "%s %s" % (msg, self.diff())
+        print("%s %s" % (msg, self.diff()), file=self.log)
         self.log.flush()
 
 timer = Timer()
@@ -136,8 +136,13 @@ def sys_call(cmd):
     :param cmd: command to be executed
     :return: (stdout, stderr)
     """
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-    return p.stdout.readlines(), p.stderr.readlines()
+    try:
+        stdout = subprocess.check_output(cmd, shell=True)
+        return stdout
+    except:
+        return None
+    #p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+    #return p.stdout.readlines(), p.stderr.readlines()
 
 
 def Exit(msg, code=1):
@@ -145,7 +150,7 @@ def Exit(msg, code=1):
     :param msg: Message displayed prior to exit
     :param code: code returned upon exiting
     """
-    print >> sys.stderr, msg
+    print(msg, file=sys.stderr)
     sys.exit(code)
 
 def ExitIf(msg, do_exit, code=1):
