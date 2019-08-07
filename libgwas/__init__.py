@@ -90,10 +90,10 @@ class GenotypeData(object):
     """Simple data structure to help build vectors of genotypes and then determine
        which allele is minor/major, effect, etc. """
     conversion = {
-        "0/0": 0,
-        "0/1": 1,
-        "1/0": 1,
-        "1/1": 2
+        b"0/0": 0,
+        b"0/1": 1,
+        b"1/0": 1,
+        b"1/1": 2
     }
     def __init__(self):
         self.genotypes = []

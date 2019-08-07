@@ -48,17 +48,20 @@ class TestBase(unittest.TestCase):
         ]
 
         self.nonmissing_mapdata = []
-        for line in open(self.nonmissing):
-            if line[0] != "#":
-                words = line.strip().split()
-                # CHR   Pos ID  REF ALT
-                self.nonmissing_mapdata.append(words[0:5])
+        with open(self.nonmissing) as f:
+            for line in f:
+                if line[0] != "#":
+                    words = line.strip().split()
+                    # CHR   Pos ID  REF ALT
+                    self.nonmissing_mapdata.append(words[0:5])
         self.missing_mapdata = []
-        for line in open(self.missing):
-            if line[0] != "#":
-                words = line.strip().split()
-                # CHR   Pos ID  REF ALT
-                self.missing_mapdata.append(words[0:5])
+        
+        with open(self.missing) as f:
+            for line in f:
+                if line[0] != "#":
+                    words = line.strip().split()
+                    # CHR   Pos ID  REF ALT
+                    self.missing_mapdata.append(words[0:5])
         self.phenotypes     = [0.1, 0.4, 1.0, 0.5, 0.9, 1.0, 0.1, 0.4, 1.0, 0.5, 0.9, 1.0]
         self.sex            = [1,1,2,2,1,1,1,1,2,2,1,1]
 

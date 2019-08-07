@@ -43,7 +43,7 @@ class BasicFile(object):
         self.compressed = compressed
 
         if self.compressed:
-            self._file = gzip.open(self.filename)
+            self._file = gzip.open(self.filename, 'rt')
         else:
             self._file = open(self.filename)
 
@@ -73,7 +73,7 @@ class GenotypeExtraction(object):
         self.missing = int(missing)
 
         # Let the missing representation map to the missing notation
-        GenotypeData.conversion["./."] = self.missing
+        GenotypeData.conversion[b'./.'] = self.missing
         GenotypeData.conversion[self.missing] = self.missing
 
     def __call__(self, locus, format):
@@ -87,7 +87,7 @@ class GenotypeExtraction(object):
         for genotype in locus[9:]:
             genotype = genotype.split(":")
             if len(genotype) > data_index:
-                genotypes.append(genotype[data_index])
+                genotypes.append(genotype[data_index].encode())
             else:
                 genotypes.append(self.missing)
         return genotypes
@@ -251,10 +251,16 @@ class Parser(DataParser):
                 locus_count += 1
                 data = Parser.ExtractGenotypes(locus, format.split(":"))
                 allelic_data = numpy.array(data.gt())
+                print(allelic_data)
+                print(DataParser.missing_storage)
+                print(allelic_data==DataParser.missing_storage)
                 if missing is None:
                     missing = numpy.zeros(allelic_data.shape[0], dtype='int8')
                 missing += ((allelic_data==DataParser.missing_storage))
         max_missing = DataParser.ind_miss_tol * locus_count
+        print(max_missing)
+        print(missing)
+        print("-->", 0+(max_missing<missing))
         dropped_individuals = 0+(max_missing<missing)
 
         if sum(dropped_individuals) > 0:
@@ -267,7 +273,7 @@ class Parser(DataParser):
     def populate_iteration(self, iteration):
         cur_idx = iteration.cur_idx
 
-        locus = self.vcf_file.next().strip().split()
+        locus = next(self.vcf_file).strip().split()
 
         iteration.chr, \
             iteration.pos, \
