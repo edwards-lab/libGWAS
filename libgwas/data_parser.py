@@ -1,7 +1,7 @@
-from parsed_locus import ParsedLocus
-from locus import Locus
+from .parsed_locus import ParsedLocus
+from .locus import Locus
 
-from boundary import BoundaryCheck
+from .boundary import BoundaryCheck
 import numpy
 
 
@@ -82,7 +82,7 @@ class DataParser(object):
     has_liability   = False
 
     #: External representation of missingness
-    missing_representation      = '0'
+    missing_representation      = b'0'
 
     # Internal representation of missingness
     missing_storage             = -1
