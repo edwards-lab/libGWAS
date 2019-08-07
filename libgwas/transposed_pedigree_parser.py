@@ -39,7 +39,7 @@ class Parser(DataParser):
         self.tfam_file = tfam
         self.tped_file = tped
         self.families = []
-        self.genotype_file = tped
+        self.genotype_file = None
         self.alleles = []
         self.ind_count = -1
 
@@ -85,25 +85,26 @@ class Parser(DataParser):
 
         sex_col = pheno_col - 1
         mask_components = []
-        for line in open(self.tfam_file):
-            words = line.strip().split()
-            if len(words) > 1:
-                indid = PhenoCovar.build_id(words)
-                if DataParser.valid_indid(indid):
-                    mask_components.append(0)
+        with open(self.tfam_file) as f:
+            for line in f:
+                words = line.strip().split()
+                if len(words) > 1:
+                    indid = PhenoCovar.build_id(words)
+                    if DataParser.valid_indid(indid):
+                        mask_components.append(0)
 
-                    sex = None
-                    pheno = None
-                    if DataParser.has_sex:
-                        sex = int(words[sex_col])
-                    if DataParser.has_pheno:
-                        pheno = float(words[pheno_col])
-                    if pheno_covar is not None:
-                        pheno_covar.add_subject(indid, sex, pheno)
-                    if len(words) > 0:
-                        self.families.append(words)
-                else:
-                    mask_components.append(1)
+                        sex = None
+                        pheno = None
+                        if DataParser.has_sex:
+                            sex = int(words[sex_col])
+                        if DataParser.has_pheno:
+                            pheno = float(words[pheno_col])
+                        if pheno_covar is not None:
+                            pheno_covar.add_subject(indid, sex, pheno)
+                        if len(words) > 0:
+                            self.families.append(words)
+                    else:
+                        mask_components.append(1)
         mask_components = numpy.array(mask_components)
         self.ind_mask = numpy.zeros(len(mask_components) * 2, dtype=numpy.int8).reshape(-1, 2)
         self.ind_mask[0:, 0] = mask_components
@@ -114,9 +115,16 @@ class Parser(DataParser):
             pheno_covar.freeze_subjects()
         self.load_genotypes()
 
+
+    def __del__(self):
+        if self.genotype_file is not None:
+            self.genotype_file.close()
+
     def load_genotypes(self):
         """This really just intializes the file by opening it up. """
 
+        if self.genotype_file is not None:
+            self.genotype_file.close()
         if DataParser.compressed_pedigree:
             self.genotype_file = gzip.open("%s.gz" % self.tped_file, 'r')
         else:
