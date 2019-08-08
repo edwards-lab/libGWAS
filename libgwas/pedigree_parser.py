@@ -179,10 +179,10 @@ class Parser(DataParser):
                 self.snp_mask[:, 0]==0) * DataParser.ind_miss_tol
 
         if DataParser.compressed_pedigree:
-            ind_count, err = sys_call("gzip -cd %s | wc -l" %
+            ind_count = sys_call("gzip -cd %s | wc -l" %
                                       ("%s.gz" % (self.datasource)))
         else:
-            ind_count, err = sys_call("wc -l %s" % (self.datasource))
+            ind_count = sys_call("wc -l %s" % (self.datasource))
         ind_count = int(ind_count[0].split()[0]) + 1
 
         snp_count = numpy.sum(self.snp_mask[:, 0] == 0)
@@ -191,7 +191,7 @@ class Parser(DataParser):
 
         valid_allele_count = 0
         if DataParser.compressed_pedigree:
-            input_file = gzip.open("%s.gz" % self.datasource, 'rb')
+            input_file = gzip.open("%s.gz" % self.datasource, 'rt')
         else:
             input_file = open(self.datasource)
 

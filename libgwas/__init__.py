@@ -137,7 +137,7 @@ def sys_call(cmd):
     :return: (stdout, stderr)
     """
     try:
-        stdout = subprocess.check_output(cmd, shell=True)
+        stdout = subprocess.check_output(cmd, shell=True, encoding='utf8')
         return stdout
     except:
         return None
