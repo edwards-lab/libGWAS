@@ -82,7 +82,7 @@ class DataParser(object):
     has_liability   = False
 
     #: External representation of missingness
-    missing_representation      = b'0'
+    missing_representation      = '0'
 
     # Internal representation of missingness
     missing_storage             = -1
