@@ -126,9 +126,9 @@ class Parser(DataParser):
         if self.genotype_file is not None:
             self.genotype_file.close()
         if DataParser.compressed_pedigree:
-            self.genotype_file = gzip.open("%s.gz" % self.tped_file, 'r')
+            self.genotype_file = gzip.open("%s.gz" % self.tped_file, 'rt')
         else:
-            self.genotype_file = open(self.tped_file, 'rt', encoding='ascii')
+            self.genotype_file = open(self.tped_file)
 
         self.filter_missing()
 
@@ -148,7 +148,7 @@ class Parser(DataParser):
             print(alleles)
             print(data[4:])
             print(DataParser.missing_representation)
-            print((set(data[4:]) - set([b'0'])))
+            print((set(data[4:]) - set(['0'])))
             raise TooManyAlleles(chr=self.chr, rsid=self.rsid, alleles=alleles)
 
         # We don't have a way to know this in advance, so we want to just iterate onward
@@ -157,7 +157,7 @@ class Parser(DataParser):
             raise TooFewAlleles(chr=self.chr, rsid=self.rsid, alleles=alleles)
 
         # Strip out any excluded individuals
-        allelic_data = numpy.ma.MaskedArray(numpy.array(data[4:], dtype="S2"), self.ind_mask).compressed().reshape(-1, 2)
+        allelic_data = numpy.ma.MaskedArray(numpy.array(data[4:], dtype=str), self.ind_mask).compressed().reshape(-1, 2)
 
         maj_allele_count = numpy.sum(allelic_data == alleles[0])
 
@@ -204,7 +204,7 @@ class Parser(DataParser):
             pos = int(pos)
             if DataParser.boundary.TestBoundary(chr, pos, rsid):
                 locus_count += 1
-                allelic_data = numpy.array(genotypes[4:], dtype="S2").reshape(-1, 2)
+                allelic_data = numpy.array(genotypes[4:], dtype=str).reshape(-1, 2)
                 if missing is None:
                     missing = numpy.zeros(allelic_data.shape[0], dtype='int8')
                 missing += (numpy.sum(0+(allelic_data==DataParser.missing_representation), axis=1) * 0.5).astype(int)
@@ -228,8 +228,8 @@ class Parser(DataParser):
         
         # Let's go ahead and set those alleles as bytes, but
         # we'll need to fix the rest
-        genotypes = next(self.genotype_file).encode().split()
-        iteration.chr, iteration.rsid, junk, iteration.pos = [x.decode() for x in genotypes[0:4]]
+        genotypes = next(self.genotype_file).split()
+        iteration.chr, iteration.rsid, junk, iteration.pos = genotypes[0:4]
         iteration.chr = int(iteration.chr)
         iteration.pos = int(iteration.pos)
 
