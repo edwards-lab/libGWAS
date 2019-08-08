@@ -182,6 +182,17 @@ class Parser(DataParser):
         self.geno_mask = None
 
         self.alt_not_missing = None
+        
+        self.info_file = None
+        
+        self.freq_file = None
+
+    def __del__(self):
+        if self.info_file is not None:
+            self.info_file.close()
+        
+        if self.freq_file is not None:
+            self.freq_file.close()
 
     def ReportConfiguration(self):
         """
@@ -206,32 +217,33 @@ class Parser(DataParser):
         :param pheno_covar: Phenotype/covariate object
         :return: None
         """
-        file = open(self.fam_details)
-        header = file.readline()
-        format = file.readline()
-        self.file_index = 0
+        
+        with open(self.fam_details) as file:
+            header = file.readline()
+            format = file.readline()
+            self.file_index = 0
 
-        mask_components = []        # 1s indicate an individual is to be masked out
-        for line in file:
-            words = line.strip().split()
-            indid = PhenoCovar.build_id(words)
-            if DataParser.valid_indid(indid):
-                mask_components.append(0)
-                if len(words) > 3:
-                    sex = int(words[5])
-                    pheno = float(words[6])
+            mask_components = []        # 1s indicate an individual is to be masked out
+            for line in file:
+                words = line.strip().split()
+                indid = PhenoCovar.build_id(words)
+                if DataParser.valid_indid(indid):
+                    mask_components.append(0)
+                    if len(words) > 3:
+                        sex = int(words[5])
+                        pheno = float(words[6])
+                    else:
+                        sex = DataParser.missing_representation
+                        pheno = DataParser.missing_representation
+                    pheno_covar.add_subject(indid, sex, pheno)
                 else:
-                    sex = DataParser.missing_representation
-                    pheno = DataParser.missing_representation
-                pheno_covar.add_subject(indid, sex, pheno)
-            else:
-                mask_components.append(1)
-        mask_components = numpy.array(mask_components)
-        #self.ind_mask = numpy.zeros(len(mask_components), dtype=numpy.int8).reshape(-1, 2)
-        self.ind_mask = numpy.array(mask_components, dtype=numpy.int8)
-        self.ind_count = sum(self.ind_mask == 0)
-        self.geno_mask = self.ind_mask.reshape(-1, 1).repeat(3, axis=1)
-        pheno_covar.freeze_subjects()
+                    mask_components.append(1)
+            mask_components = numpy.array(mask_components)
+            #self.ind_mask = numpy.zeros(len(mask_components), dtype=numpy.int8).reshape(-1, 2)
+            self.ind_mask = numpy.array(mask_components, dtype=numpy.int8)
+            self.ind_count = sum(self.ind_mask == 0)
+            self.geno_mask = self.ind_mask.reshape(-1, 1).repeat(3, axis=1)
+            pheno_covar.freeze_subjects()
 
     def load_genotypes(self):
         """Prepares the files for genotype parsing.
@@ -245,11 +257,15 @@ class Parser(DataParser):
             info_filename = self.current_file.replace(Parser.gen_ext, Parser.info_ext)
             if len(self.info_files) > 0:
                 info_filename = self.info_files[self.file_index]
+            if self.info_file is not None:
+                self.info_file.close()
             self.info_file = open(info_filename)
             self.info_file.readline()   # Dump the header
 
+            if self.freq_file is not None:
+                self.freq_file.close()
             if DataParser.compressed_pedigree:
-                self.freq_file = gzip.open("%s" % (self.current_file), 'rb')
+                self.freq_file = gzip.open("%s" % (self.current_file), 'rt')
             else:
                 self.freq_file = open(self.current_file)
             self.check_freq_header = True

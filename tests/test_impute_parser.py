@@ -127,7 +127,7 @@ class TestBase(unittest.TestCase):
         self.info_file2 = "%s-2.info" % (prefix)
         self.uncmp_1 = "%s.gen" % (prefix)
         self.uncmp_2 = "%s-2.gen" % (prefix)
-        gen_file = gzip.open(self.gen_file, 'wb')
+        gen_file = gzip.open(self.gen_file, 'wt')
         uncmp_file = open(self.uncmp_1, 'w')
         idx = 0
         self.additive_encoding = numpy.zeros((20, 12))
@@ -194,7 +194,7 @@ class TestBase(unittest.TestCase):
         gen_file.close()
         uncmp_file.close()
         info_file.close()
-        gen_file = gzip.open(self.gen_file2, 'wb')
+        gen_file = gzip.open(self.gen_file2, 'wt')
         uncmp_file = open(self.uncmp_2, 'w')
         info_file = open(self.info_file2, 'w')
         print("snp_id rs_id position exp_freq_a1 info certainty type info_type0 concord_type0 r2_type0", file=info_file)
@@ -243,6 +243,8 @@ class TestBase(unittest.TestCase):
                                             "-1"]), file=info_file)
             idx += 1
         self.impute_parser = impute_parser.Parser(self.fam_file, [self.gen_file], chroms = ["3"])
+        uncmp_file.close()
+        info_file.close()
 
 class TestImputedBasics(TestBase):
     def testFamilyData(self):
