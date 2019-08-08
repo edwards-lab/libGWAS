@@ -58,7 +58,7 @@ class BasicFile(object):
 
 def OpenFile(filename, compressed):
     if compressed:
-        file = gzip.open(filename)
+        file = gzip.open(filename, 'rt')
     else:
         file = open(filename)
 
