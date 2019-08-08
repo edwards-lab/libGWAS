@@ -183,11 +183,11 @@ class Parser(DataParser):
                                       ("%s.gz" % (self.datasource)))
         else:
             ind_count = sys_call("wc -l %s" % (self.datasource))
-        ind_count = int(ind_count[0].split()[0]) + 1
+        ind_count = int(ind_count.split()[0]) + 1
 
         snp_count = numpy.sum(self.snp_mask[:, 0] == 0)
 
-        allelic_data = numpy.empty((ind_count, snp_count, 2), dtype='S1')
+        allelic_data = numpy.empty((ind_count, snp_count, 2), dtype=str)
 
         valid_allele_count = 0
         if DataParser.compressed_pedigree:
@@ -235,6 +235,7 @@ class Parser(DataParser):
                 else:
                     individual_mask += [1, 1]
                     self.individual_mask.append(1)
+        input_file.close()
         self.ind_count = valid_allele_count
         allelic_data = allelic_data[0:valid_allele_count]
         self.genotypes = numpy.empty((snp_count, valid_allele_count))
@@ -252,7 +253,8 @@ class Parser(DataParser):
             snp_geno = allelic_data[:,i]
             alleles, allele_counts = numpy.unique(snp_geno, return_counts=True)
             allele_counts = dict(list(zip(alleles, allele_counts)))
-            alleles = list(set(alleles) - set([DataParser.missing_representation]))
+            alleles = sorted(alleles)
+            alleles = sorted(list(set(alleles) - set([DataParser.missing_representation])))
 
             if len(alleles) > 2:
                 valid = False
