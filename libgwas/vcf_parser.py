@@ -17,6 +17,8 @@ from . import GenotypeData as GenotypeData
 import sys
 import logging
 
+import faulthandler
+
 from contextlib import contextmanager
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -50,6 +52,9 @@ class BasicFile(object):
     def __iter__(self):
         for line in self._file:
             yield line.strip().split()
+            
+    def __del__(self):
+        self._file.close()
 
 def OpenFile(filename, compressed):
     if compressed:
@@ -64,7 +69,7 @@ class GenotypeExtraction(object):
     """Basic class for Parser functor. This assumes a single value as the 
         data found at the key. For more complex values, such as probabilities,
         a different functor should be used."""
-    def __init__(self, genokey="GT", missing=None):
+    def __init__(self, genokey='GT', missing=None):
         global genotype_values
         self.genokey = genokey
         if missing is None:
@@ -73,21 +78,23 @@ class GenotypeExtraction(object):
         self.missing = int(missing)
 
         # Let the missing representation map to the missing notation
-        GenotypeData.conversion[b'./.'] = self.missing
+        GenotypeData.conversion['./.'] = self.missing
         GenotypeData.conversion[self.missing] = self.missing
 
     def __call__(self, locus, format):
         """We assume locus has been split and is an array with no return character at end"""
         global genotype_values
         try:
+            if self.genokey not in format:
+                faulthandler.dump_traceback(all_threads=True)
             data_index = format.index(self.genokey)
         except:
-            Exit("Unable to find data key, %s, in  format list: %s" % (self.genokey, ":".join(format)))
+            Exit(f"Unable to find data key, {self.genokey}, in  format list: {format}")
         genotypes = GenotypeData()
         for genotype in locus[9:]:
             genotype = genotype.split(":")
             if len(genotype) > data_index:
-                genotypes.append(genotype[data_index].encode())
+                genotypes.append(genotype[data_index])
             else:
                 genotypes.append(self.missing)
         return genotypes
@@ -138,7 +145,13 @@ class Parser(DataParser):
 
         #: Subjects dropped due to missing individual threshold
         self.alt_not_missing = None
+
+        self.vcf_file = None
         self.reset()
+    
+    def __del__(self):
+        if self.vcf_file is not None:
+            self.vcf_file.close()
 
     def initialize(self, map3=None, pheno_covar=None):
         self.init_subjects(pheno_covar)
@@ -185,8 +198,11 @@ class Parser(DataParser):
         """skip_all_headers will skip all of the headers, including the sample header row. 
 
         This only relates to non-tabix based files"""
+        if self.vcf_file is not None:
+            self.vcf_file.close()
         if self.indexed and len(DataParser.boundary.bounds) > 0:
             self.tabix_file = tabix.open(self.vcf_filename)
+
             self.vcf_file = tabix.query(str(BoundaryCheck.chrom),
                     DataParser.boundary.bounds[0],
                     DataParser.boundary.bounds[1])
@@ -209,6 +225,8 @@ class Parser(DataParser):
         # 1s indicate an individual is to be masked out
         mask_components = []
 
+        if self.vcf_file is not None:
+            self.vcf_file.close()
         file = OpenFile(self.vcf_filename, DataParser.compressed_pedigree)
         sample_ids = None
 
@@ -241,26 +259,28 @@ class Parser(DataParser):
         self.reset()
         missing = None
         locus_count = 0
+        total_locus_count = 0
 
         for locus in self.vcf_file:
             locus = locus.strip().split()
             chr, pos, rsid, ref, alt, qual, filter, info, format = locus[0:9]
+                
+            format = format.split(":")
             chr = int(chr)
             pos = int(pos)
             if DataParser.boundary.TestBoundary(chr, pos,rsid):
                 locus_count += 1
-                data = Parser.ExtractGenotypes(locus, format.split(":"))
+                data = Parser.ExtractGenotypes(locus, format)
                 allelic_data = numpy.array(data.gt())
-                print(allelic_data)
-                print(DataParser.missing_storage)
-                print(allelic_data==DataParser.missing_storage)
+
                 if missing is None:
                     missing = numpy.zeros(allelic_data.shape[0], dtype='int8')
                 missing += ((allelic_data==DataParser.missing_storage))
+            total_locus_count += 1
         max_missing = DataParser.ind_miss_tol * locus_count
-        print(max_missing)
-        print(missing)
-        print("-->", 0+(max_missing<missing))
+        
+        if missing is None:
+            missing = numpy.array([1] * locus_count)
         dropped_individuals = 0+(max_missing<missing)
 
         if sum(dropped_individuals) > 0:
