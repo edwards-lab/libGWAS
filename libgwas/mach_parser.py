@@ -183,27 +183,29 @@ class Parser(DataParser):
 
         file = self.family_details
         if DataParser.compressed_pedigree:
-            data, serr = sys_call('gunzip -c %s | wc -l' % (file))
+            data = sys_call('gunzip -c %s | wc -l' % (file))
             self.line_count = int(data[0].strip().split(" ")[0])
-            iddata, serr = sys_call('gunzip -c %s | cut -f 1' % (file))
+            iddata = sys_call('gunzip -c %s | cut -f 1' % (file))
         else:
-            data, serr = sys_call('wc -l %s' % (file))
+            data = sys_call('wc -l %s' % (file))
             self.line_count = int(data[0].strip().split(" ")[0])
-            iddata, serr = sys_call('cat %s | cut -f 1' % (file))
+            iddata = sys_call('cat %s | cut -f 1' % (file))
 
         ids_observed = set()
-        for line in iddata:
-            indid = line.strip().split()[0]
-            indid = ":".join(indid.split("->"))
+        
+        for line in iddata.split("\n"):
+            if len(line) > 0:
+                indid = line.strip().split()[0]
+                indid = ":".join(indid.split("->"))
 
-            ExitIf("Duplicate ID found in dose file: %s" % (indid), indid in ids_observed)
-            ids_observed.add(indid)
+                ExitIf("Duplicate ID found in dose file: %s" % (indid), indid in ids_observed)
+                ids_observed.add(indid)
 
-            if DataParser.valid_indid(indid):
-                mask_components.append(0)
-                pheno_covar.add_subject(indid, PhenoCovar.missing_encoding, PhenoCovar.missing_encoding)
-            else:
-                mask_components.append(1)
+                if DataParser.valid_indid(indid):
+                    mask_components.append(0)
+                    pheno_covar.add_subject(indid, PhenoCovar.missing_encoding, PhenoCovar.missing_encoding)
+                else:
+                    mask_components.append(1)
 
         self.ind_mask = numpy.array(mask_components) == 1
         self.ind_count = self.ind_mask.shape[0]
@@ -211,7 +213,7 @@ class Parser(DataParser):
 
     def openfile(self, filename):
         if DataParser.compressed_pedigree:
-            return gzip.open(filename, 'rb')
+            return gzip.open(filename, 'rt')
         return open(filename, 'r')
 
     def parse_genotypes(self, lb, ub):
@@ -223,21 +225,21 @@ class Parser(DataParser):
         :return: Dosage dosages for current chunk
 
         """
-        file = self.openfile(self.current_file)
-        words = file.readline().strip().split()[lb:ub]
-        word_count = len(words)
-        idx =0
+        with self.openfile(self.current_file) as file:
+            words = file.readline().strip().split()[lb:ub]
+            word_count = len(words)
+            idx =0
 
-        if word_count > 0:
-            dosages = numpy.empty((self.ind_count, word_count), dtype='|S5')
-            while word_count > 1:
-                dosages[idx] = numpy.array(words)
-                idx += 1
-                line = file.readline()
-                words = line.strip().split()[lb:ub]
-                word_count = len(words)
-        else:
-            raise EOFError
+            if word_count > 0:
+                dosages = numpy.empty((self.ind_count, word_count), dtype='|S5')
+                while word_count > 1:
+                    dosages[idx] = numpy.array(words)
+                    idx += 1
+                    line = file.readline()
+                    words = line.strip().split()[lb:ub]
+                    word_count = len(words)
+            else:
+                raise EOFError
 
         return dosages
 
@@ -283,43 +285,43 @@ class Parser(DataParser):
         # too big considering ours are 60+ gigs
         self.dosages = numpy.transpose(buff)
 
-        file = self.openfile(self.info_file)
-        file.readline()     # drop header
+        with self.openfile(self.info_file) as file:
+            file.readline()     # drop header
 
-        lindex = 0
-        while lindex < lb - 2:
-            file.readline()
-            lindex += 1
-
-        self.markers = []
-        self.rsids = []
-        self.locus_count= 0
-        self.maf = []
-        self.alleles = []
-        self.rsquared = []
-
-        while lindex < (ub - 2):
-            words = file.readline().strip().split()
-            if len(words) > 0:
-                loc, al2, al1, freq1, maf, avgcall,rsq = words[0:7]
-                marker = [-1, lindex]
-                if self.chrpos_encoding:
-                    marker = [int(x) for x in loc.split(":")[0:2]]
-                    if len(marker) < 2:
-                        raise libgwas.exceptions.MalformedInputFile("MACH .info"+
-                                " file IDs must be in the format chrom:rsid")
-                    if len(marker) > 2:
-                        self.rsids.append(marker[2])
-                    self.markers.append(marker[0:2])
-                else:
-                    self.markers.append(lindex)
-                    self.rsids.append(loc)
-                self.maf.append(float(maf))
-                self.alleles.append([al1, al2])
-                self.rsquared.append(float(rsq))
+            lindex = 0
+            while lindex < lb - 2:
+                file.readline()
                 lindex += 1
-            else:
-                break
+
+            self.markers = []
+            self.rsids = []
+            self.locus_count= 0
+            self.maf = []
+            self.alleles = []
+            self.rsquared = []
+
+            while lindex < (ub - 2):
+                words = file.readline().strip().split()
+                if len(words) > 0:
+                    loc, al2, al1, freq1, maf, avgcall,rsq = words[0:7]
+                    marker = [-1, lindex]
+                    if self.chrpos_encoding:
+                        marker = [int(x) for x in loc.split(":")[0:2]]
+                        if len(marker) < 2:
+                            raise libgwas.exceptions.MalformedInputFile("MACH .info"+
+                                    " file IDs must be in the format chrom:rsid")
+                        if len(marker) > 2:
+                            self.rsids.append(marker[2])
+                        self.markers.append(marker[0:2])
+                    else:
+                        self.markers.append(lindex)
+                        self.rsids.append(loc)
+                    self.maf.append(float(maf))
+                    self.alleles.append([al1, al2])
+                    self.rsquared.append(float(rsq))
+                    lindex += 1
+                else:
+                    break
 
         if self.dosages.shape[0] != len(self.markers):
             print("What is going on? I have ", \
@@ -358,6 +360,7 @@ class Parser(DataParser):
 
         if self.chrpos_encoding:
             iteration.chr, iteration.pos = self.markers[cur_idx]
+            iteration.pos = int(iteration.pos)
         else:
             iteration.chr = "NA"
             iteration.pos = "NA"

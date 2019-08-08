@@ -17,7 +17,7 @@ from libgwas.data_parser import DataParser
 from libgwas.pheno_covar import PhenoCovar
 from libgwas import mach_parser
 from libgwas.boundary import BoundaryCheck
-
+from libgwas.snp_boundary_check import SnpBoundaryCheck
 
 import gzip
 
@@ -58,13 +58,22 @@ class TestBase(unittest.TestCase):
 
 
     def tearDown(self):
-        os.remove(self.gen_file)
+        try:
+            os.remove(self.gen_file)
+        except:
+            pass
         os.remove(self.gen_file2)
         os.remove(self.uncmp_1)
-        os.remove(self.uncmp_2)
+        try:
+            os.remove(self.uncmp_2)
+        except:
+            pass
         os.remove(self.info_file1)
         os.remove(self.info_file2)
-        os.remove(self.info_ucmp1)
+        try:
+            os.remove(self.info_ucmp1)
+        except:
+            pass
         os.remove(self.info_ucmp2)
 
         mach_parser.Parser.dosage_ext = self.dosage_ext
@@ -111,7 +120,7 @@ class TestBase(unittest.TestCase):
         self.uncmp_2 = "%s-2.dose" % (prefix)
         self.info_ucmp1 = "%s.info" % (prefix)
         self.info_ucmp2 = "%s-2.info" % (prefix)
-        gen_file = gzip.open(self.gen_file, 'wb')
+        gen_file = gzip.open(self.gen_file, 'wt')
         uncmp_file = open(self.uncmp_1, 'w')
         idx = 0
         self.dosage_encoding = numpy.zeros((20, 12))
@@ -121,8 +130,11 @@ class TestBase(unittest.TestCase):
         info_file = open(self.info_file1, 'w')
         print("snp_id rs_id position exp_freq_a1 info certainty type info_type0 concord_type0 r2_type0", file=info_file)
 
+        info_file.close()
         self.chroms = [ int(x) for x in ['1'] * 7 + ['2'] * 7 + ['3'] * 6]
         self.positions = [1012, 1020, 1026, 1032, 1100, 1137, 1149] * 2 + [1012, 1020, 1026, 1032, 1100, 1137]
+        self.locus_labels = [f"{x[0]}:{x[1]}" for x in list(zip(self.chroms,self.positions))]
+        
         self.alleles = [list(numpy.random.choice(['A','C','G','T'], 2, replace=False)) for x in range(0, 20)]
         idx = 0
 
@@ -152,7 +164,7 @@ class TestBase(unittest.TestCase):
         self.dosage_encoding[0:10,:] = numpy.transpose(dosages)
         gen_file.close()
         uncmp_file.close()
-        info_file = gzip.open(self.info_file1, 'wb')
+        info_file = gzip.open(self.info_file1, 'wt')
         info_ufile = open(self.info_ucmp1, 'w')
         print("SNP\tAl1\tAl2\tFreq1\tMAF\tAvgCall\tRsq\tGenotyped\tLooRsq\tEmpR\tEmpRsq\tDose1\tdose2", file=info_file)
         print("SNP\tAl1\tAl2\tFreq1\tMAF\tAvgCall\tRsq\tGenotyped\tLooRsq\tEmpR\tEmpRsq\tDose1\tdose2", file=info_ufile)
@@ -181,7 +193,7 @@ class TestBase(unittest.TestCase):
         info_ufile.close()
 
 
-        gen_file = gzip.open(self.gen_file2, 'wb')
+        gen_file = gzip.open(self.gen_file2, 'wt')
         uncmp_file = open(self.uncmp_2, 'w')
 
         idx = 0
@@ -211,8 +223,9 @@ class TestBase(unittest.TestCase):
         self.dosage_encoding[10:,:] = numpy.transpose(dosages)
 
         gen_file.close()
+        uncmp_file.close()
 
-        info_file = gzip.open(self.info_file2, 'wb')
+        info_file = gzip.open(self.info_file2, 'wt')
         info_cfile = open(self.info_ucmp2, 'w')
         print("SNP\tAl1\tAl2\tFreq1\tMAF\tAvgCall\tRsq\tGenotyped\tLooRsq\tEmpR\tEmpRsq\tDose1\tdose2", file=info_file)
         print("SNP\tAl1\tAl2\tFreq1\tMAF\tAvgCall\tRsq\tGenotyped\tLooRsq\tEmpR\tEmpRsq\tDose1\tdose2", file=info_cfile)
@@ -261,7 +274,7 @@ class TestImputedBasics(TestBase):
         self.assertEqual(20, idx)
     def testChromosomesNoChrPos(self):
         mach_parser.Parser.chrpos_encoding = False
-
+        DataParser.boundary = SnpBoundaryCheck(self.locus_labels)
         pc = PhenoCovar()
         parser = mach_parser.Parser([self.gen_file, self.gen_file2])
         parser.load_family_details(pc)
@@ -339,6 +352,8 @@ class TestImputedBasics(TestBase):
 
     def testInfoFileUseNoChrPos(self):
         # We'll give it an invalid gen_ext so that we can be certain that it's using the files provided
+        mach_parser.Parser.chrpos_encoding = False
+        DataParser.boundary = SnpBoundaryCheck(self.locus_labels)
         mach_parser.Parser.gen_ext='asdf'
         PhenoCovar.sex_as_covariate = True
         pc = PhenoCovar()
