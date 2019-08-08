@@ -96,7 +96,11 @@ class Parser(transposed_pedigree_parser.Parser):
         self.parser_name = bed
 
         self.alt_not_missing = None
-
+        
+    def __del__(self):
+        if self.genotype_file is not None:
+            self.genotype_file.close()
+            
     def getnew(self):
         return Parser(self.fam_file, self.bim_file, self.bed_file)
 
@@ -135,25 +139,26 @@ class Parser(transposed_pedigree_parser.Parser):
 
         sex_col = pheno_col - 1
         mask_components = []
-        for line in open(self.fam_file):
-            words = line.strip().split()
-            if len(words) > 1:
-                indid = PhenoCovar.build_id(words)
-                if DataParser.valid_indid(indid):
-                    mask_components.append(0)
+        with open(self.fam_file) as file:
+            for line in file:
+                words = line.strip().split()
+                if len(words) > 1:
+                    indid = PhenoCovar.build_id(words)
+                    if DataParser.valid_indid(indid):
+                        mask_components.append(0)
 
-                    sex = None
-                    pheno = None
-                    if DataParser.has_sex:
-                        sex = int(words[sex_col])
-                    if DataParser.has_pheno:
-                        pheno = float(words[pheno_col])
-                    if pheno_covar is not None:
-                        pheno_covar.add_subject(indid, sex, pheno)
-                    if len(words) > 0:
-                        self.families.append(words)
-                else:
-                    mask_components.append(1)
+                        sex = None
+                        pheno = None
+                        if DataParser.has_sex:
+                            sex = int(words[sex_col])
+                        if DataParser.has_pheno:
+                            pheno = float(words[pheno_col])
+                        if pheno_covar is not None:
+                            pheno_covar.add_subject(indid, sex, pheno)
+                        if len(words) > 0:
+                            self.families.append(words)
+                    else:
+                        mask_components.append(1)
         mask_components = numpy.array(mask_components)
         self.ind_mask = numpy.zeros(len(mask_components), dtype=numpy.int8)
         self.ind_mask = mask_components
@@ -254,7 +259,7 @@ class Parser(transposed_pedigree_parser.Parser):
                  "individual major. You must regenerate your data in SNP major"+
                  " format. "))
 
-        self.bytes_per_read = self.ind_count / 4
+        self.bytes_per_read = int(self.ind_count / 4)
         if self.ind_count % 4 > 0:
             self.bytes_per_read += 1
         self.fmt_string = "<" + "B"*self.bytes_per_read

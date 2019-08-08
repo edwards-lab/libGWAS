@@ -15,6 +15,7 @@ import numpy
 from libgwas.exceptions import InvalidFrequency
 from libgwas.exceptions import TooMuchMissing
 from libgwas.exceptions import InvariantVar
+import libgwas 
 
 import unittest
 
@@ -50,8 +51,8 @@ class TestBase(unittest.TestCase):
             [0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0]
 
         ]
-        self.nonmissing_mapdata = [x.strip().split() for x in open(self.nonmissing_bim).readlines()]
-        self.missing_mapdata = [x.strip().split() for x in open(self.missing_bim).readlines()]
+        self.nonmissing_mapdata = libgwas.get_lines(self.nonmissing_bim, split=True)
+        self.missing_mapdata = libgwas.get_lines(self.missing_bim, split=True)
 
         self.phenotypes     = [0.1, 0.4, 1.0, 0.5, 0.9, 1.0, 0.1, 0.4, 1.0, 0.5, 0.9, 1.0]
         self.sex            = [1,1,2,2,1,1,1,1,2,2,1,1]
