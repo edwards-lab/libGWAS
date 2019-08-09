@@ -184,11 +184,11 @@ class Parser(DataParser):
         file = self.family_details
         if DataParser.compressed_pedigree:
             data = sys_call('gunzip -c %s | wc -l' % (file))
-            self.line_count = int(data[0].strip().split(" ")[0])
+            self.line_count = int(data.strip().split(" ")[0])
             iddata = sys_call('gunzip -c %s | cut -f 1' % (file))
         else:
             data = sys_call('wc -l %s' % (file))
-            self.line_count = int(data[0].strip().split(" ")[0])
+            self.line_count = int(data.strip().split(" ")[0])
             iddata = sys_call('cat %s | cut -f 1' % (file))
 
         ids_observed = set()
