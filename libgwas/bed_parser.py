@@ -179,7 +179,7 @@ class Parser(transposed_pedigree_parser.Parser):
         if map3:
             cols = [0, 1, 2, 3, 4]
         logging.info("Loading file: %s" % self.bim_file)
-        val = sys_call('wc -l %s' % (self.bim_file))[0][0].split()[0]
+        val = sys_call('wc -l %s' % (self.bim_file)).split()[0]
         marker_count = int(val)
         self.markers = numpy.zeros((marker_count, 2), dtype=int)
         self.rsids = []
