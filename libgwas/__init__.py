@@ -82,6 +82,10 @@ class Timer:
     def report_total(self, msg):
         print("%s %s" % (msg, self.diff()), file=self.log)
         self.log.flush()
+        
+    def close(self):
+        if self.log != self.stderr:
+            self.log.close()
 
 timer = Timer()
 

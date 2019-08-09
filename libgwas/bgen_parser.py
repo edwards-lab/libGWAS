@@ -4,7 +4,7 @@ from .boundary import BoundaryCheck
 from .parsed_locus import ParsedLocus
 from .exceptions import TooManyAlleles
 from .exceptions import TooFewAlleles
-from bgen_reader import read_bgen
+import bgen_reader
 from .impute_parser import gen_dosage_extraction
 # from exceptions import StopIteration
 import numpy
