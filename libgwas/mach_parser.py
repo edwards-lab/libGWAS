@@ -239,6 +239,7 @@ class Parser(DataParser):
                     words = line.strip().split()[lb:ub]
                     word_count = len(words)
             else:
+                file.close()
                 raise EOFError
 
         return dosages

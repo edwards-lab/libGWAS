@@ -21,7 +21,6 @@ from libgwas.exceptions import InvalidFrequency
 from libgwas.exceptions import TooMuchMissing
 from libgwas.exceptions import TooMuchMissingpPhenoCovar
 from libgwas.tests import remove_file
-from libgwas.tests import close_file
 
 import gzip
 

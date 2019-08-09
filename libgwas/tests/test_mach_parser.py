@@ -19,7 +19,6 @@ from libgwas import mach_parser
 from libgwas.boundary import BoundaryCheck
 from libgwas.snp_boundary_check import SnpBoundaryCheck
 from libgwas.tests import remove_file
-from libgwas.tests import close_file
 
 import gzip
 

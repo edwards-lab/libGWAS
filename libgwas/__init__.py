@@ -56,6 +56,9 @@ class Timer:
         self.log = sys.stderr
         if fn is not None:
             self.log = open(fn, 'w')
+    
+    def __del__(self):
+        self.close()
 
     def diff(self):
         tdiff = datetime.datetime.now() - self.start
@@ -84,11 +87,20 @@ class Timer:
         self.log.flush()
         
     def close(self):
-        if self.log != self.stderr:
+        if self.log != sys.stderr:
             self.log.close()
 
 timer = Timer()
 
+def close_file(f):
+    '''Windows...I imagine this requires some other changes, but until
+    the rest of this is working, this will eliminate the stupid failures'''
+    
+    if f is not None:
+        try:
+            f.close()
+        except:
+            pass
 
 class GenotypeData(object):
     """Simple data structure to help build vectors of genotypes and then determine

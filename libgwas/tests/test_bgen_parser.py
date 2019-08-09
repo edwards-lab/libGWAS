@@ -16,7 +16,7 @@ import os
 
 from libgwas.data_parser import DataParser
 from libgwas.pheno_covar import PhenoCovar, PhenoIdFormat
-from libgwas import bgen_parser
+import libgwas.bgen_parser
 from libgwas.boundary import BoundaryCheck
 from pkg_resources import resource_filename
 import libgwas.impute_parser
@@ -123,9 +123,9 @@ class TestBase(unittest.TestCase):
         self.has_parents = DataParser.has_parents
         self.has_fid = DataParser.has_fid
         self.has_liability = DataParser.has_liability
-        self.encoding = bgen_parser.encoding
-        self.parser_info_thresh = bgen_parser.Parser.info_threshold
-        bgen_parser.Parser.info_threshold = 0.0
+        self.encoding = libgwas.bgen_parser.encoding
+        self.parser_info_thresh = libgwas.bgen_parser.Parser.info_threshold
+        libgwas.bgen_parser.Parser.info_threshold = 0.0
 
         self.raw = numpy.zeros((20, 12, 3))
 
@@ -148,15 +148,15 @@ class TestBase(unittest.TestCase):
         DataParser.has_liability = self.has_liability
         DataParser.has_parents = self.has_parents
         PhenoCovar.sex_as_covariate = self.sex_as_covar
-        bgen_parser.encoding = self.encoding
-        bgen_parser.Parser.info_threshold = self.parser_info_thresh
+        libgwas.bgen_parser.encoding = self.encoding
+        libgwas.bgen_parser.Parser.info_threshold = self.parser_info_thresh
         PhenoCovar.id_encoding = self.orig_id_encoding
 
 class TestBGenBasics(TestBase):
     def testWithSample(self):
 
         pc = PhenoCovar()
-        parser = bgen_parser.Parser(self.nomissing, self.nomissing_sample)
+        parser = libgwas.bgen_parser.Parser(self.nomissing, self.nomissing_sample)
 
         parser.load_family_details(pc)
         parser.load_genotypes()
@@ -175,7 +175,7 @@ class TestBGenBasics(TestBase):
 
     def testWithoutSample(self):
         pc = PhenoCovar()
-        parser = bgen_parser.Parser(self.nomissing)
+        parser = libgwas.bgen_parser.Parser(self.nomissing)
 
         parser.load_family_details(pc)
         parser.load_genotypes()
@@ -185,7 +185,7 @@ class TestBGenBasics(TestBase):
 
     def testAdditiveGeno(self):
         pc = PhenoCovar()
-        parser = bgen_parser.Parser(self.nomissing)
+        parser = libgwas.bgen_parser.Parser(self.nomissing)
 
         parser.load_family_details(pc)
         parser.load_genotypes()
