@@ -105,7 +105,7 @@ class Parser(DataParser):
         :return: None
         """
         libgwas.timer.report_period("Loading Family Details")
-        self.sample_ids = list(self.bgen['samples']['id'])
+        self.sample_ids = list(self.bgen['samples'])
 
         artificial_ids = False
         if self.sample_ids[0] == "sample_0":
@@ -116,21 +116,21 @@ class Parser(DataParser):
         # in the bgen file. bgen_reader will generate it's own ids if they
         # don't exist, but we don't care to worry about those.
         if self.sample_filename is not None:
-            file = open(self.sample_filename)
-            header = file.readline()
-            format = file.readline()        #
-            self.file_index = 0
+            with open(self.sample_filename) as file:
+                header = file.readline()
+                format = file.readline()        #
+                self.file_index = 0
 
-            sample_index = 0
+                sample_index = 0
 
-            for line in file:
-                words = line.strip().split()
-                indid = words[0]
+                for line in file:
+                    words = line.strip().split()
+                    indid = words[0]
 
-                if artificial_ids or self.sample_ids[sample_index] == indid:
-                    if not DataParser.valid_indid(indid):
-                        mask_components[sample_index] = 1
-                sample_index += 1
+                    if artificial_ids or self.sample_ids[sample_index] == indid:
+                        if not DataParser.valid_indid(indid):
+                            mask_components[sample_index] = 1
+                    sample_index += 1
 
         sample_index = 0
         for indid in self.sample_ids:
@@ -146,15 +146,18 @@ class Parser(DataParser):
         libgwas.timer.report_period("Family Details loaded.")
     def open_bgen(self):
         if self.bgen is None:
+            print(f"Samples File path: {self.sample_filename}")
             self.bgen = bgen_reader.read_bgen(self.bgen_filename,
-                                              sample_file=self.sample_filename,
-                                              verbose=False)
-            self.markers_raw = self.bgen['variants']
+                                            metafile_filepath=None,
+                                              samples_filepath=self.sample_filename,
+                                              verbose=True)
+            self.markers_raw = self.bgen['variants'].compute()
             libgwas.timer.report_period("Marker data loaded: %d variants found " % (len(self.markers_raw)))
         self.bgen_idx = self.bgen_start_idx
 
     def parse_variant(self, index):
         log = logging.getLogger('bgen_parser::open_bgen')
+        print("-->", index, self.markers_raw.shape)
         print("--Parse Variants: %d (%d) " % (index, self.markers_raw.shape[0]))
         if index < self.markers_raw.shape[0]:
             locus = Locus()

@@ -160,8 +160,10 @@ class TestBGenBasics(TestBase):
 
         parser.load_family_details(pc)
         parser.load_genotypes()
-        pc.load_phenofile(open(self.nomissing_sample), names=['plink_pheno'], sample_file=True)
-        pc.load_covarfile(open(self.nomissing_sample), names=['sex'], sample_file=True)
+        with open(self.nomissing_sample) as file:
+            pc.load_phenofile(file, names=['plink_pheno'], sample_file=True)
+        with open(self.nomissing_sample) as file:
+            pc.load_covarfile(file, names=['sex'], sample_file=True)
 
         idx = 0
         for id in self.ind_ids:
