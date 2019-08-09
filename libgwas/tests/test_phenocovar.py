@@ -19,6 +19,7 @@ import libgwas.standardizer
 from libgwas.exceptions import InvariantVar
 from libgwas.exceptions import TooMuchMissingpPhenoCovar
 
+from libgwas.tests import remove_file
 def get_lines(fn):
     lines = []
     
@@ -64,10 +65,8 @@ class TestBase(unittest.TestCase):
         self.no_header.close()
         self.header.close()
         for file in self.filenames:
-            try:
-                os.remove(file)
-            except:
-                pass
+            remove_file(file)
+
         PhenoCovar.sex_as_covariate = self.pcsac
         DataParser.has_pheno = self.has_pheno
         libgwas.standardizer.set_standardizer(self.standardizer)

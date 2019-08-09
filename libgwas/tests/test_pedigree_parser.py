@@ -24,6 +24,7 @@ from libgwas.exceptions import InvalidFrequency
 from libgwas.exceptions import TooMuchMissing
 from libgwas.exceptions import TooMuchMissingpPhenoCovar
 
+from libgwas.tests import remove_file
 class TestBase(unittest.TestCase):
     def setUp(self):
         self.WriteTestFiles()
@@ -55,10 +56,8 @@ class TestBase(unittest.TestCase):
     def tearDown(self):
 
         for file in self.filenames:
-            try:
-                os.remove(file)
-            except:
-                pass
+            remove_file(file)
+            
         BoundaryCheck.chrom  = self.chrom
         DataParser.boundary  = self.boundary
         DataParser.min_maf   = self.min_maf

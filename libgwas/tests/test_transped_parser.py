@@ -18,6 +18,7 @@ from libgwas.snp_boundary_check import SnpBoundaryCheck
 from libgwas.exceptions import InvalidFrequency
 from libgwas.exceptions import TooMuchMissing
 
+from libgwas.tests import remove_file
 
 def get_lines(fn, split=False):
     lines = []
@@ -59,10 +60,8 @@ class TestBase(unittest.TestCase):
     def tearDown(self):
 
         for file in self.filenames:
-            try:
-                os.remove(file)
-            except:
-                pass
+            remove_file(file)
+
         PhenoCovar.sex_as_covariate = self.sex_as_covar
         BoundaryCheck.chrom  = self.chrom
         DataParser.boundary  = self.boundary

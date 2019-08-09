@@ -18,6 +18,8 @@ from libgwas.pheno_covar import PhenoCovar
 from libgwas import mach_parser
 from libgwas.boundary import BoundaryCheck
 from libgwas.snp_boundary_check import SnpBoundaryCheck
+from libgwas.tests import remove_file
+from libgwas.tests import close_file
 
 import gzip
 
@@ -58,23 +60,14 @@ class TestBase(unittest.TestCase):
 
 
     def tearDown(self):
-        try:
-            os.remove(self.gen_file)
-        except:
-            pass
-        os.remove(self.gen_file2)
-        os.remove(self.uncmp_1)
-        try:
-            os.remove(self.uncmp_2)
-        except:
-            pass
-        os.remove(self.info_file1)
-        os.remove(self.info_file2)
-        try:
-            os.remove(self.info_ucmp1)
-        except:
-            pass
-        os.remove(self.info_ucmp2)
+        remove_file(self.gen_file)
+        remove_file(self.gen_file2)
+        remove_file(self.uncmp_1)
+        remove_file(self.uncmp_2)
+        remove_file(self.info_file1)
+        remove_file(self.info_file2)
+        remove_file(self.info_ucmp1)
+        remove_file(self.info_ucmp2)
 
         mach_parser.Parser.dosage_ext = self.dosage_ext
         mach_parser.Parser.info_ext = self.info_ext

@@ -20,22 +20,14 @@ from libgwas.boundary import BoundaryCheck
 from libgwas.exceptions import InvalidFrequency
 from libgwas.exceptions import TooMuchMissing
 from libgwas.exceptions import TooMuchMissingpPhenoCovar
-
+from libgwas.tests import remove_file
+from libgwas.tests import close_file
 
 import gzip
 
 base_freq = [0.99, 0.75, 0.7,0.8, 0.65, 0.7, 0.85, 0.7, 0.7, 0.3]
 
 
-def close_file(f):
-    '''Windows...I imagine this requires some other changes, but until
-    the rest of this is working, this will eliminate the stupid failures'''
-    
-    if f is not None:
-        try:
-            f.close()
-        except:
-            pass
 
 class TestBase(unittest.TestCase):
     def setUp(self):
@@ -72,13 +64,13 @@ class TestBase(unittest.TestCase):
 
 
     def tearDown(self):
-        close_file(self.fam_file)
-        close_file(self.gen_file)
-        close_file(self.gen_file2)
-        close_file(self.uncmp_1)
-        close_file(self.uncmp_2)
-        close_file(self.info_file1)
-        close_file(self.info_file2)
+        remove_file(self.fam_file)
+        remove_file(self.gen_file)
+        remove_file(self.gen_file2)
+        remove_file(self.uncmp_1)
+        remove_file(self.uncmp_2)
+        remove_file(self.info_file1)
+        remove_file(self.info_file2)
 
         impute_parser.Parser.gen_ext = self.gen_ext
         BoundaryCheck.chrom  = self.chrom

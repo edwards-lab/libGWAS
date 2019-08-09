@@ -20,6 +20,7 @@ from libgwas.exceptions import InvalidFrequency
 from libgwas.exceptions import TooMuchMissing
 from libgwas.exceptions import TooMuchMissingpPhenoCovar
 import numpy
+from libgwas.tests import remove_file
 
 class TestBase(unittest.TestCase):
     def setUp(self):
