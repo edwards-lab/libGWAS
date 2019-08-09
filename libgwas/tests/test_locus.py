@@ -1,4 +1,4 @@
-from tests import test_transped_parser
+from libgwas.tests import test_transped_parser
 from libgwas.data_parser import DataParser
 from libgwas.pheno_covar import PhenoCovar
 from libgwas.transposed_pedigree_parser import Parser as TransposedPedigreeParser

@@ -23,10 +23,10 @@ from pkg_resources import resource_filename
 
 class TestBase(unittest.TestCase):
     def setUp(self):
-        self.missing = "bedfiles/ped_missing"
-        self.missing_bed = resource_filename("tests", "%s.bed" % (self.missing))
-        self.missing_bim = resource_filename("tests", "%s.bim" % (self.missing))
-        self.missing_fam = resource_filename("tests", "%s.fam" % (self.missing))
+        self.missing = "tests/bedfiles/ped_missing"
+        self.missing_bed = resource_filename("libgwas", "%s.bed" % (self.missing))
+        self.missing_bim = resource_filename("libgwas", "%s.bim" % (self.missing))
+        self.missing_fam = resource_filename("libgwas", "%s.fam" % (self.missing))
         self.genotypes = [
             [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0],
             [1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
@@ -36,10 +36,10 @@ class TestBase(unittest.TestCase):
             [1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
             [0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0]
         ]
-        self.nonmissing = "bedfiles/ped_nomiss"
-        self.nonmissing_bed = resource_filename("tests", "%s.bed" % (self.nonmissing))
-        self.nonmissing_bim = resource_filename("tests", "%s.bim" % (self.nonmissing))
-        self.nonmissing_fam = resource_filename("tests", "%s.fam" % (self.nonmissing))
+        self.nonmissing = "tests/bedfiles/ped_nomiss"
+        self.nonmissing_bed = resource_filename("libgwas", "%s.bed" % (self.nonmissing))
+        self.nonmissing_bim = resource_filename("libgwas", "%s.bim" % (self.nonmissing))
+        self.nonmissing_fam = resource_filename("libgwas", "%s.fam" % (self.nonmissing))
 
         self.genotypes_w_missing = [
             [0, 1],

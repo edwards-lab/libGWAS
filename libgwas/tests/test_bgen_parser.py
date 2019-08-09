@@ -31,8 +31,8 @@ class TestBase(unittest.TestCase):
         self.allele_1 = list("AAACCCGGGTCGTGTATACC")
         self.allele_2 = list("CGTGTATACCAAACCCGGGT")
 
-        self.nomissing = resource_filename("tests", 'bedfiles/test.bgen')
-        self.nomissing_sample = resource_filename("tests", 'bedfiles/test.bgen.sample')
+        self.nomissing = resource_filename("libgwas", 'tests/bedfiles/test.bgen')
+        self.nomissing_sample = resource_filename("libgwas", 'tests/bedfiles/test.bgen.sample')
 
 
         self.additive_encoding = [

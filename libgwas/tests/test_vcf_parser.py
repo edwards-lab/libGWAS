@@ -23,8 +23,8 @@ import numpy
 
 class TestBase(unittest.TestCase):
     def setUp(self):
-        self.nonmissing = resource_filename("tests", "bedfiles/nomiss.vcf")
-        self.nonmissinggz = resource_filename("tests", "bedfiles/nomiss.vcf.gz")
+        self.nonmissing = resource_filename("libgwas", "tests/bedfiles/nomiss.vcf")
+        self.nonmissinggz = resource_filename("libgwas", "tests/bedfiles/nomiss.vcf.gz")
         self.genotypes = [
             [0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0],
             [1, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
@@ -34,8 +34,8 @@ class TestBase(unittest.TestCase):
             [1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0],
             [0, 1, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0]
         ]
-        self.missing = resource_filename("tests", "bedfiles/miss.vcf")
-        self.missinggz = resource_filename("tests", "bedfiles/miss.vcf.gz")
+        self.missing = resource_filename("libgwas", "tests/bedfiles/miss.vcf")
+        self.missinggz = resource_filename("libgwas", "tests/bedfiles/miss.vcf.gz")
 
         self.genotypes_w_missing = [
             [0, 1],
