@@ -200,7 +200,7 @@ class Parser(transposed_pedigree_parser.Parser):
         self.locus_count = self.markers.shape[0]
 
     def init_genotype_file(self):
-        """Resets the bed file and preps it for starting at the start of the \
+        """ses the bed file and preps it for starting at the start of the \
             genotype data
 
         Returns to beginning of file and reads the version so that it points \
@@ -209,7 +209,8 @@ class Parser(transposed_pedigree_parser.Parser):
         :return: None
         """
         self.genotype_file.seek(0)
-
+        DataParser.boundary.beyond_upper_bound = False
+        
         buff = self.genotype_file.read(3)
         version = 0
         magic, data_format = buff.unpack("HB", version)
@@ -252,6 +253,8 @@ class Parser(transposed_pedigree_parser.Parser):
         logging.info("Sorting out missing data from genotype data")
         # Filter out individuals according to missingness
         self.genotype_file.seek(0)
+        DataParser.boundary.beyond_upper_bound = False
+        
         magic, data_format = struct.unpack("<HB", self.genotype_file.read(3))
 
         if data_format != 1:
@@ -299,6 +302,7 @@ class Parser(transposed_pedigree_parser.Parser):
         # We can't merge these two iterations since we need to know which
         # individuals to consider for filtering on MAF
         dropped_snps = []
+        DataParser.boundary.beyond_upper_bound = False
         self.genotype_file.seek(0)
         self.genotype_file.read(3)
         self.total_locus_count = self.locus_count
@@ -361,7 +365,7 @@ class Parser(transposed_pedigree_parser.Parser):
         :return: ParsedLocus representing the first locus.
         """
 
-
+        DataParser.boundary.beyond_upper_bound = False
         self.genotype_file.seek(0)
         self.genotype_file.read(3)
 
