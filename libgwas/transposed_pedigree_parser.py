@@ -257,4 +257,6 @@ class Parser(DataParser):
         """Reset the file and begin iteration"""
 
         self.genotype_file.seek(0)
+        # Make sure this didn't get tripped and remain wrongfully telling us we are finished
+        DataParser.boundary.beyond_upper_bound = False
         return ParsedLocus(self)
