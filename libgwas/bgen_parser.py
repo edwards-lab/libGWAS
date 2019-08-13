@@ -157,8 +157,6 @@ class Parser(DataParser):
 
     def parse_variant(self, index):
         log = logging.getLogger('bgen_parser::open_bgen')
-        print("-->", index, self.markers_raw.shape)
-        print("--Parse Variants: %d (%d) " % (index, self.markers_raw.shape[0]))
         if index < self.markers_raw.shape[0]:
             locus = Locus()
             v = self.markers_raw.loc[index]
@@ -242,25 +240,25 @@ class Parser(DataParser):
             iteration.rsid = snpdata.rsid
 
             if DataParser.boundary.TestBoundary(BoundaryCheck.get_valid_chrom(iteration.chr), iteration.pos, iteration.rsid):
-                iteration.genotype_data = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute(), self.geno_mask).compressed().reshape(-1, 3)
-                libgwas.timer.report_period("-  %d %s:%s - Done"% (self.bgen_idx, iteration.chr, str(iteration.pos)))
-                # Assuming that if we are missing the first dose, then we are missing them all
+                geno_content = self.bgen['genotype'][self.bgen_idx - 1].compute()
+                iteration.genotype_data = numpy.ma.MaskedArray(geno_content['probs'], self.geno_mask).compressed().reshape(-1, 3)
                 likely_hets = numpy.sum(iteration.genotype_data[:, 1] > Parser.het_threshold)
+                libgwas.timer.report_period("-  %d %s:%s - Done"% (self.bgen_idx, iteration.chr, str(iteration.pos)))
 
                 # Skip over things that are likely to be fixed loci
                 isvalid = likely_hets > self.min_likely_hets
                 if isvalid:
-                    # technically, there is a ploidy value in there someplace which should end up as 0 for data without information
-                    iteration.missing_genotypes = numpy.sum(iteration.genotype_data, axis=1) < 0.1
+                    iteration.missing_genotypes = geno_content['missing']
                     libgwas.timer.report_period("- missingness identified")
+                    
                 return isvalid
-
-                return True
+            elif DataParser.boundary.beyond_upper_bound:
+                libgwas.timer.report_period("ParseVariant: %d out of loci to consider" % (snpdata.cur_idx))
         return False
 
 
     def filter_genotypes(self, missing):
-        genotypes = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute(),
+        genotypes = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute()['probs'],
                                          self.geno_mask).compressed().reshape(-1, 3)
 
         estimate = None

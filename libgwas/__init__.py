@@ -59,6 +59,15 @@ class Timer:
     
     def __del__(self):
         self.close()
+        
+    def open(self, fn, msg):
+        lp = self.last_period
+        self.report_period(msg)
+        self.last_period = lp
+        if self.log != sys.stderr:
+            self.log.close()
+        self.log = open(fn, 'w')
+        self.report_period(msg)
 
     def diff(self):
         tdiff = datetime.datetime.now() - self.start

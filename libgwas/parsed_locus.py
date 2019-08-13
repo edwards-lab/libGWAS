@@ -92,7 +92,7 @@ class ParsedLocus(Locus):
         Will only return valid loci or exit via StopIteration exception
 
         """
-        while True:
+        while True and not data_parser.DataParser.boundary.beyond_upper_bound:
             self.cur_idx += 1
             if self.__datasource.populate_iteration(self):
                 return self

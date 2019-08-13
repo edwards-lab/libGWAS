@@ -4,8 +4,8 @@
 # be that it will work.
 
 libgwas
-SciPy>=0.12
+SciPy>=1.1.0
 NumPy>=1.7.1
-bgen-reader>=2.0.8
+bgen-reader>=3.0.6
 pytabix>=0.0.2
-enum34
+# enum34
