@@ -136,7 +136,7 @@ class Parser(DataParser):
                     self.rsids.append(locus[1])
                     self.snp_mask[idx] = 0
                 idx += 1
-            self.markers = numpy.array(self.markers, dtype=numpy.int)
+            self.markers = numpy.array(self.markers, dtype=int)
             self.rsids   = numpy.array(self.rsids)
 
         # We don't follow these rules here

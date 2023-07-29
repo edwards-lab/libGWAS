@@ -10,6 +10,7 @@ import sys
 from . import sys_call
 import logging
 from .pheno_covar import PhenoCovar
+import pdb
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -251,6 +252,7 @@ class Parser(transposed_pedigree_parser.Parser):
         missing             = None
         locus_count         = 0
         logging.info("Sorting out missing data from genotype data")
+        #pdb.set_trace()
         # Filter out individuals according to missingness
         self.genotype_file.seek(0)
         DataParser.boundary.beyond_upper_bound = False
@@ -267,6 +269,7 @@ class Parser(transposed_pedigree_parser.Parser):
             self.bytes_per_read += 1
         self.fmt_string = "<" + "B"*self.bytes_per_read
         last_chr = -1
+        #pdb.set_trace()
         for index in range(self.locus_count):
             buffer = struct.unpack(self.fmt_string,
                                    self.genotype_file.read(self.bytes_per_read))

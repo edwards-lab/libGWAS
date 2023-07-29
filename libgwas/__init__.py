@@ -4,6 +4,7 @@ __version__ = '1.2.0'
 
 import subprocess
 import sys
+from sys import stderr
 import numpy
 from . import exceptions
 import datetime
@@ -53,7 +54,7 @@ class Timer:
     def __init__(self, fn=None):
         self.start = datetime.datetime.now()
         self.last_period = self.start
-        self.log = sys.stderr
+        self.log = stderr
         if fn is not None:
             self.log = open(fn, 'w')
     
@@ -64,7 +65,7 @@ class Timer:
         lp = self.last_period
         self.report_period(msg)
         self.last_period = lp
-        if self.log != sys.stderr:
+        if self.log != stderr:
             self.log.close()
         self.log = open(fn, 'w')
         self.report_period(msg)
@@ -96,7 +97,7 @@ class Timer:
         self.log.flush()
         
     def close(self):
-        if self.log != sys.stderr:
+        if self.log != stderr:
             self.log.close()
 
 timer = Timer()
@@ -175,7 +176,7 @@ def Exit(msg, code=1):
     :param msg: Message displayed prior to exit
     :param code: code returned upon exiting
     """
-    print(msg, file=sys.stderr)
+    print(msg, file=stderr)
     sys.exit(code)
 
 def ExitIf(msg, do_exit, code=1):
