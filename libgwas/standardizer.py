@@ -5,6 +5,8 @@ from . import pheno_covar
 from .exceptions import InvariantVar
 from .exceptions import TooMuchMissingpPhenoCovar
 
+import pdb
+
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
 #     This file is part of libGWAS.
@@ -77,6 +79,8 @@ class StandardizedVariable(object):
         """
         count = 0
         mismatch = 0
+
+        #pdb.set_trace()
 
         if missing_in_geno is None:
             nonmissing = numpy.invert(self.missing[self.idx])
