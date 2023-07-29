@@ -369,7 +369,7 @@ class Parser(DataParser):
 
         if cur_idx < len(self.markers) and DataParser.boundary.TestBoundary(iteration.chr, iteration.pos, iteration.rsid) and self.rsquared[cur_idx] >= Parser.min_rsquared:
             iteration.major_allele, iteration.minor_allele = self.alleles[cur_idx]
-            iteration.genotype_data = numpy.ma.masked_array(self.dosages[cur_idx].astype(numpy.float), self.ind_mask).compressed()
+            iteration.genotype_data = numpy.ma.masked_array(self.dosages[cur_idx].astype(float), self.ind_mask).compressed()
             iteration._maf = numpy.mean(iteration.genotype_data/2)
             iteration.allele_count2 = (iteration.genotype_data.shape[0] * 4.0 - numpy.sum(iteration.genotype_data))
 
