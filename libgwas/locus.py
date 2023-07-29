@@ -63,6 +63,7 @@ class Locus(object):
         frequency. However, it does allow clients to use the same calls for each
         population without having to perform checks during those calculations.
         """
+        #pdb.set_trace()
         maj_count = self.maj_allele_count
         self.maj_allele_count = self.min_allele_count
         self.min_allele_count = maj_count

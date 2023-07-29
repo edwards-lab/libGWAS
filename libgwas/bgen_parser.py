@@ -19,6 +19,8 @@ from .locus import Locus
 import libgwas
 import logging
 
+import pdb 
+
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
 #     This file is part of libGWAS.
@@ -74,7 +76,7 @@ class Parser(DataParser):
         self.bgen_start_idx = 0     # We'll mark this for the first locus to be analyzed
 
         self.bgen = None            # This is the buffer where we'll store the output from the current file
-        self.markers_raw = None     # raw marker details in DataFrame format
+        #self.markers_raw = None     # raw marker details in DataFrame format
         # We don't want to bother checking for this until we know which subjects
         # to exclude
         self.max_missing_geno = None
@@ -105,7 +107,7 @@ class Parser(DataParser):
         :return: None
         """
         libgwas.timer.report_period("Loading Family Details")
-        self.sample_ids = list(self.bgen['samples'])
+        self.sample_ids = list(self.bgen.samples)
 
         artificial_ids = False
         if self.sample_ids[0] == "sample_0":
@@ -147,33 +149,41 @@ class Parser(DataParser):
     def open_bgen(self):
         if self.bgen is None:
             print(f"Samples File path: {self.sample_filename}")
-            self.bgen = bgen_reader.read_bgen(self.bgen_filename,
-                                            metafile_filepath=None,
+            #self.bgen = bgen_reader.read_bgen(self.bgen_filename,
+            #                                metafile_filepath=None,
+            #                                  samples_filepath=self.sample_filename,
+            #                                  verbose=True)
+            self.bgen = bgen_reader.open_bgen(self.bgen_filename,
                                               samples_filepath=self.sample_filename,
                                               verbose=True)
-            self.markers_raw = self.bgen['variants'].compute()
-            libgwas.timer.report_period("Marker data loaded: %d variants found " % (len(self.markers_raw)))
+            #self.markers_raw = self.bgen['variants'].compute()
+            libgwas.timer.report_period("Marker data loaded: %d variants found " % (self.bgen.nvariants))
         self.bgen_idx = self.bgen_start_idx
+
+    def getLocusFromBgen(self, index):
+        l = Locus()
+        l.chr = self.bgen.chromosomes[index].lstrip("0")
+        if l.chr.strip() == "" and Parser.default_chromosome != -1:
+            l.chr = Parser.default_chromosome
+
+        l.pos = self.bgen.positions[index]
+        l.alleles = self.bgen.allele_ids[index].split(",")
+        l.rsid = self.bgen.ids[index]
+
+        for component in l.rsid.split(":"):
+            if component[0:3] == 'rs':
+                l.rsid = component
+        l.cur_idx = index
+        l.nalleles = self.bgen.nalleles
+
+        return l
 
     def parse_variant(self, index):
         log = logging.getLogger('bgen_parser::open_bgen')
-        if index < self.markers_raw.shape[0]:
-            locus = Locus()
-            v = self.markers_raw.loc[index]
+        # bgen.shape is (nsamples, nvariants, max_combinations)
+        if index < self.bgen.shape[1]:
+            locus = self.getLocusFromBgen(index)
 
-            locus.chr = v.chrom.lstrip("0")
-
-            if locus.chr.strip() == "" and Parser.default_chromosome != -1:
-                locus.chr = Parser.default_chromosome
-            locus.pos = v.pos
-            locus.alleles = v.allele_ids.split(",")
-            locus.rsid = v.rsid
-            for component in locus.rsid.split(":"):
-                if component[0:3] == 'rs':
-                    locus.rsid = component
-            locus.cur_idx = index
-            locus.nalleles = v.nalleles
-            #libgwas.timer.report_period("--%s:%d %s" % (str(locus.chr), locus.pos, locus.rsid))
             return locus
         libgwas.timer.report_period("ParseVariant: %d out of loci to consider" % (index))
         raise StopIteration
@@ -230,6 +240,7 @@ class Parser(DataParser):
         the valid genomic region for analysis.
         """
         global encoding
+        #pdb.set_trace()
         snpdata, info = self.get_next_line()
 
         if info > Parser.info_threshold:
@@ -240,15 +251,19 @@ class Parser(DataParser):
             iteration.rsid = snpdata.rsid
 
             if DataParser.boundary.TestBoundary(BoundaryCheck.get_valid_chrom(iteration.chr), iteration.pos, iteration.rsid):
-                geno_content = self.bgen['genotype'][self.bgen_idx - 1].compute()
-                iteration.genotype_data = numpy.ma.MaskedArray(geno_content['probs'], self.geno_mask).compressed().reshape(-1, 3)
+                # geno_content = self.bgen['genotype'][self.bgen_idx - 1].compute()
+                geno_probs, missing, ploidy = self.bgen.read(self.bgen_idx -1, return_missings=True, return_ploidies=True)
+                
+                #iteration.genotype_data = numpy.ma.MaskedArray(geno_content['probs'], self.geno_mask).compressed().reshape(-1, 3)
+                iteration.genotype_data = numpy.ma.MaskedArray(geno_probs[:,0,:], self.geno_mask).compressed().reshape(-1, 3)
                 likely_hets = numpy.sum(iteration.genotype_data[:, 1] > Parser.het_threshold)
                 libgwas.timer.report_period("-  %d %s:%s - Done"% (self.bgen_idx, iteration.chr, str(iteration.pos)))
 
                 # Skip over things that are likely to be fixed loci
                 isvalid = likely_hets > self.min_likely_hets
                 if isvalid:
-                    iteration.missing_genotypes = geno_content['missing']
+                    # iteration.missing_genotypes = geno_content['missing']
+                    iteration.missing_genotypes = missing[:,0]
                     libgwas.timer.report_period("- missingness identified")
                     
                 return isvalid
@@ -258,7 +273,10 @@ class Parser(DataParser):
 
 
     def filter_genotypes(self, missing):
-        genotypes = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute()['probs'],
+        #genotypes = numpy.ma.MaskedArray(self.bgen['genotype'][self.bgen_idx - 1].compute()['probs'],
+        #                                 self.geno_mask).compressed().reshape(-1, 3)
+        geno_probs = self.bgen.read(self.bgen_idx -1)[:,0,:]
+        genotypes = numpy.ma.MaskedArray(geno_probs,
                                          self.geno_mask).compressed().reshape(-1, 3)
 
         estimate = None
