@@ -12,7 +12,7 @@ if "DEBUG" in sys.argv:
 import unittest
 import numpy
 import os
-
+import pdb
 
 from libgwas.data_parser import DataParser
 from libgwas.pheno_covar import PhenoCovar, PhenoIdFormat
@@ -33,6 +33,7 @@ class TestBase(unittest.TestCase):
 
         self.nomissing = resource_filename("libgwas", 'tests/bedfiles/test.bgen')
         self.nomissing_sample = resource_filename("libgwas", 'tests/bedfiles/test.bgen.sample')
+        self.nomissing_pheno = resource_filename("libgwas", "tests/bedfiles/test.bgen.pheno")
 
 
         self.additive_encoding = [
@@ -104,7 +105,7 @@ class TestBase(unittest.TestCase):
             0.749438595153
         ]
         self.rsids = "rs1320,rs13267,rs132134,rs132201,rs132268,rs132335,rs132402,rs132469,rs132536,rs132603,rs132670,rs132737,rs132804,rs132871,rs132938,rs1321005,rs1321072,rs1321139,rs1321206,rs1321273".split(",")
-        self.ind_ids = 'ID0001,ID20002,ID0003,ID0004,IID0005,0006,ID0007,ID0008,ID0009,ID0010,ID0011,IID0012'.split(',')
+        self.ind_ids = [f"{x}:{x}" for x in 'ID0001,ID20002,ID0003,ID0004,IID0005,0006,ID0007,ID0008,ID0009,ID0010,ID0011,IID0012'.split(',')]
         # For now, we aren't calculating the info scores and it always returns 1.0
         self.info = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 
@@ -132,7 +133,8 @@ class TestBase(unittest.TestCase):
         self.orig_id_encoding = PhenoCovar.id_encoding
 
         # This is required for the current bgen sample file format
-        PhenoCovar.id_encoding = PhenoIdFormat.FID
+        PhenoCovar.id_encoding = PhenoIdFormat.IID_FID
+        # PhenoCovar.id_encoding = PhenoIdFormat.FID
 
     def tearDown(self):
         BoundaryCheck.chrom  = self.chrom
@@ -156,13 +158,15 @@ class TestBGenBasics(TestBase):
     def testWithSample(self):
 
         pc = PhenoCovar()
+
         parser = libgwas.bgen_parser.Parser(self.nomissing, self.nomissing_sample)
 
         parser.load_family_details(pc)
         parser.load_genotypes()
-        with open(self.nomissing_sample) as file:
+        # pdb.set_trace()
+        with open(self.nomissing_pheno) as file:
             pc.load_phenofile(file, names=['plink_pheno'], sample_file=True)
-        with open(self.nomissing_sample) as file:
+        with open(self.nomissing_pheno) as file:
             pc.load_covarfile(file, names=['sex'], sample_file=True)
 
         idx = 0
@@ -180,7 +184,7 @@ class TestBGenBasics(TestBase):
         parser.load_family_details(pc)
         parser.load_genotypes()
         idx = 0
-        for id in ["ID%s" % str(x).zfill(4) for x in range(1,12)]:
+        for id in [f"ID{str(x).zfill(4)}:ID{str(x).zfill(4)}" for x in range(1,12)]:
             self.assertTrue(id in pc.pedigree_data)
 
     def testAdditiveGeno(self):
