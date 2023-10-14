@@ -107,12 +107,18 @@ class Parser(DataParser):
         :return: None
         """
         libgwas.timer.report_period("Loading Family Details")
-        self.sample_ids = list(self.bgen.samples)
+
+        # EST TODO: I need to make sure this is correct for the different types
+        # of input. This worked for Joes data and the test data, but it 
+        # probably isn't right. 
+        self.sample_ids = [f"{x}:{x}" for x in list(self.bgen.samples)]
 
         artificial_ids = False
         if self.sample_ids[0] == "sample_0":
             artificial_ids = True
 
+        #print(self.ind_exclusions)
+        #print(self.sample_ids[0:10])
         mask_components = [0 for x in self.sample_ids]  # 1s indicate an individual is to be masked out
         # Sample file is only necessary if the user chose not to include them
         # in the bgen file. bgen_reader will generate it's own ids if they
@@ -120,19 +126,30 @@ class Parser(DataParser):
         if self.sample_filename is not None:
             with open(self.sample_filename) as file:
                 header = file.readline()
+                id2_exists = "ID_2" in header
                 format = file.readline()        #
                 self.file_index = 0
 
                 sample_index = 0
+                samples_kept = 0
+                samples_skipped = 0
 
                 for line in file:
                     words = line.strip().split()
-                    indid = words[0]
+                    if id2_exists:
+                        indid = ":".join(words[0:2])
+                    else:
+                        indid = ":".join([words[0], words[0]])
 
                     if artificial_ids or self.sample_ids[sample_index] == indid:
                         if not DataParser.valid_indid(indid):
                             mask_components[sample_index] = 1
+                            samples_skipped +=1
+                        else:
+                            samples_kept += 1
                     sample_index += 1
+                print(f"Samples Kept: {samples_kept}")
+                print(f"Samples Dropped: {samples_skipped}")
 
         sample_index = 0
         for indid in self.sample_ids:
@@ -240,7 +257,7 @@ class Parser(DataParser):
         the valid genomic region for analysis.
         """
         global encoding
-        #pdb.set_trace()
+
         snpdata, info = self.get_next_line()
 
         if info > Parser.info_threshold:
@@ -253,7 +270,7 @@ class Parser(DataParser):
             if DataParser.boundary.TestBoundary(BoundaryCheck.get_valid_chrom(iteration.chr), iteration.pos, iteration.rsid):
                 # geno_content = self.bgen['genotype'][self.bgen_idx - 1].compute()
                 geno_probs, missing, ploidy = self.bgen.read(self.bgen_idx -1, return_missings=True, return_ploidies=True)
-                
+               
                 #iteration.genotype_data = numpy.ma.MaskedArray(geno_content['probs'], self.geno_mask).compressed().reshape(-1, 3)
                 iteration.genotype_data = numpy.ma.MaskedArray(geno_probs[:,0,:], self.geno_mask).compressed().reshape(-1, 3)
                 likely_hets = numpy.sum(iteration.genotype_data[:, 1] > Parser.het_threshold)
@@ -263,7 +280,8 @@ class Parser(DataParser):
                 isvalid = likely_hets > self.min_likely_hets
                 if isvalid:
                     # iteration.missing_genotypes = geno_content['missing']
-                    iteration.missing_genotypes = missing[:,0]
+                    #iteration.missing_genotypes = missing[:,0]
+                    iteration.missing_genotypes = numpy.ma.MaskedArray(missing[:,0], self.geno_mask[:,0]).compressed()
                     libgwas.timer.report_period("- missingness identified")
                     
                 return isvalid
