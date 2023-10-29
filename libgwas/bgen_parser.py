@@ -115,7 +115,7 @@ class Parser(DataParser):
         # is going to take some serious reworking
         # 
         self.sample_ids = list(self.bgen.samples)
-        if PhenoCovar.id_encoding in [PhenoCovar.IID_FID, PhenoCovar.FID_FID, PhenoCovar.IID_IID]:
+        if PhenoCovar.id_encoding in [PhenoIdFormat.IID_FID, PhenoIdFormat.FID_FID, PhenoIdFormat.IID_IID]:
             self.sample_ids = [f"{x}:{x}" for x in list(self.bgen.samples)]
 
         artificial_ids = False
