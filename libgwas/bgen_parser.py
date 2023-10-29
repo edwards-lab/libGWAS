@@ -1,5 +1,5 @@
 from .data_parser import DataParser
-from .pheno_covar import PhenoCovar
+from .pheno_covar import PhenoCovar, PhenoIdFormat
 from .boundary import BoundaryCheck
 from .parsed_locus import ParsedLocus
 from .exceptions import TooManyAlleles
@@ -126,7 +126,9 @@ class Parser(DataParser):
         if self.sample_filename is not None:
             with open(self.sample_filename) as file:
                 header = file.readline()
-                id2_exists = "ID_2" in header
+                id2_exists = ("ID_2" in header or "FID" in header)
+                if id2_exists:
+                    PhenoCovar.set_id_format(PhenoIdFormat.IID_FID)
                 format = file.readline()        #
                 self.file_index = 0
 
@@ -136,10 +138,7 @@ class Parser(DataParser):
 
                 for line in file:
                     words = line.strip().split()
-                    if id2_exists:
-                        indid = ":".join(words[0:2])
-                    else:
-                        indid = ":".join([words[0], words[0]])
+                    indid = PhenoCovar.build_id(words)
 
                     if artificial_ids or self.sample_ids[sample_index] == indid:
                         if not DataParser.valid_indid(indid):

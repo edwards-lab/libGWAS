@@ -7,6 +7,8 @@ from .standardizer import get_standardizer
 import enum
 import sys
 
+import pdb
+
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
 #     This file is part of libGWAS.
@@ -26,9 +28,11 @@ __license__ = "GPL3.0"
 
 
 class PhenoIdFormat(enum.Enum):
-    IID_FID=1
-    IID=2
-    FID=3
+    IID_FID=1       # ID is at 0 and 1 and combined
+    IID=2           # ID is at position 1
+    FID=3           # ID is at position 0
+    FID_FID=4       # This just assumes the ID is at position 0 and is repeated
+    IID_IID=5       # This assumes that the ID is at position 1 and is repeated
 
 class PhenoCovar(object):
     """Store both phenotype and covariate data in a single object.
@@ -142,6 +146,12 @@ class PhenoCovar(object):
             print(self.covariate_data, file=sys.stderr)
             print(self.pedigree_data, file=sys.stderr)
             sys.exit(1)
+
+    @classmethod
+    def set_id_format(cls, id_format):
+        cls.id_encoding = id_format
+
+
     @classmethod
     def build_id(cls, row):
         if cls.id_encoding == PhenoIdFormat.IID:
@@ -150,6 +160,11 @@ class PhenoCovar(object):
             return row[0]
         if cls.id_encoding == PhenoIdFormat.IID_FID:
             return ":".join(row[0:2])
+        if cls.id_encoding == PhenoIdFormat.IID_IID:
+            return ":".join([row[0], row[0]])
+        if cls.id_encoding == PhenoIdFormat.FID_FID:
+            return ":".join([row[1], row[1]])
+        
 
     def load_phenofile(self, file, indices=[], names=[], sample_file=False):
         """Load phenotype data from phenotype file
@@ -227,6 +242,7 @@ class PhenoCovar(object):
             for line in file:
                 line_number += 1
                 words   = line.split()
+                #pdb.set_trace()
                 iid = self.build_id(words)
 
                 # Indexes are 1 based...silly humans
@@ -238,6 +254,7 @@ class PhenoCovar(object):
 
 
                 pidx = 0
+                #pdb.set_trace()
                 for idx in valid_indices:
                     try:
                         pheno = float(words[1+idx])
@@ -252,6 +269,7 @@ class PhenoCovar(object):
                             "The line in question looks like this: \n--> %s") %
                             (file.name, line_number, line.strip())
                         )
+        #pdb.set_trace()
         if self.phenotype_data.shape[1] == len(ignored_data):
             raise NoMatchedPhenoCovars("No matching individuals were found in the phenotype file")
 

@@ -55,11 +55,11 @@ class StandardizedVariable(object):
         self.phenotypes = None
 
 
-        phidx=0
+        phidx=0 
         for pheno in pc.phenotype_data:
             if pheno.shape[0] == 0:
                 raise TooMuchMissingpPhenoCovar("Pheno", 1.0)
-            missing = pheno == pheno_covar.PhenoCovar.missing_encoding
+            missing = pheno == pheno_covar.PhenoCovar.missing_encoding 
             for idx in range(0, self.covar_count):
                 missing = missing | (pc.covariate_data[idx] == pheno_covar.PhenoCovar.missing_encoding)
             self.missing.append(missing)
@@ -79,8 +79,6 @@ class StandardizedVariable(object):
         """
         count = 0
         mismatch = 0
-
-        #pdb.set_trace()
 
         if missing_in_geno is None:
             nonmissing = numpy.invert(self.missing[self.idx])

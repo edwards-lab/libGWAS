@@ -4,6 +4,7 @@ from .locus import Locus
 from .boundary import BoundaryCheck
 import numpy
 
+import pdb
 
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
