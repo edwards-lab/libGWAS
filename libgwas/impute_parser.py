@@ -1,12 +1,15 @@
 from . import ExitIf
 from . import BuildReportLine
-from data_parser import DataParser
-from parsed_locus import ParsedLocus
-from exceptions import TooManyAlleles
-from exceptions import TooFewAlleles
+from .data_parser import DataParser
+from .parsed_locus import ParsedLocus
+from .pheno_covar import PhenoCovar
+from .exceptions import TooManyAlleles
+from .exceptions import TooFewAlleles
+from . import allele_counts
 import gzip
 import numpy
-from exceptions import InvalidSelection
+from .exceptions import InvalidSelection
+import logging
 import os
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
@@ -56,7 +59,52 @@ def SetEncoding(sval):
     else:
         raise InvalidSelection("Invalid encoding, %s, selected" % (sval))
 
+# Extract genotypes from raw genotypes (considering missing @ phenotype)
+# Convert genotypes to analyzable form if there is any need
 
+
+def gen_dosage_extraction(alleles, rawgeno, non_missing):
+    global encoding
+    a1 = (rawgeno[:, 0][non_missing]).astype('float64')
+    het = rawgeno[:, 1][non_missing].astype('float64')
+    a2 = rawgeno[:, 2][non_missing].astype('float64')
+
+
+    valid_pop = a1.shape[0]
+    hetc = int(sum(het) * valid_pop)
+    a1c = int(2 * sum(a1) * valid_pop) + hetc
+    a2c = int(2 * sum(a2) * valid_pop) + hetc
+    alc = None
+    additive = het + (a2 * 2)
+    # Additive
+    if encoding == Encoding.Additive:
+        genotypes = additive
+
+    elif encoding == Encoding.Dominant:
+        genotypes = het + a2
+                
+    elif encoding == Encoding.Recessive:
+        genotypes = a2
+    
+    elif encoding == Encoding.Genotype:
+        if a1c > a2c:
+            a0_mask = (a1 > a2) & (a1 > het)
+            a1_mask = (a2 > a1) & (a2 > het)
+        else:
+            a0_mask = (a2 > a1) & (a2 > het)
+            a1_mask = (a1 > a2) & (a1 > het)
+
+        ht_mask = (het > a1) & (het > a2)
+        genotypes = numpy.zeros(a1.shape[0], dtype='int8')
+        genotypes[ht_mask] = 1
+        genotypes[a1_mask] = 2
+
+    else:
+        print("unexpected encoding: ", encoding)
+        sys.exit(1)
+    alc = allele_counts.AlleleCounts(genotypes, alleles, non_missing)
+    alc.set_allele_counts(a1c, a2c, hetc, sum(additive/2)/float(a1.shape[0]))
+    return alc
 """
 ISSUES:
 * Beyond consideration for MVTest, is it typical to transform these frequencies into genotypes?
@@ -129,22 +177,39 @@ class Parser(DataParser):
         #: List of chroms to match files listed in archives
         self.chroms = chroms
 
+        self.check_freq_header = True
 
-    def ReportConfiguration(self, file):
+        self.geno_mask = None
+
+        self.alt_not_missing = None
+        
+        self.info_file = None
+        
+        self.freq_file = None
+
+    def __del__(self):
+        if self.info_file is not None:
+            self.info_file.close()
+        
+        if self.freq_file is not None:
+            self.freq_file.close()
+
+    def ReportConfiguration(self):
         """
         :param file: Destination for report details
         :return: None
         """
         global encodingpar
-        print >> file, BuildReportLine("FAM FILE", self.fam_details)
-        print >> file, BuildReportLine("IMPUTE_ARCHIVES", "%s:%s" % (str(self.chroms[0]), self.archives[0]))
+        log = logging.getLogger('impute_parser::ReportConfiguration')
+        log.info(BuildReportLine("FAM FILE", self.fam_details))
+        log.info(BuildReportLine("IMPUTE_ARCHIVES", "%s:%s" % (str(self.chroms[0]), self.archives[0])))
         idx = 0
         for arch in self.archives[1:]:
-            print >> file, BuildReportLine("", "%s:%s" % (str(self.chroms[idx+1]), arch))
+            log.info(BuildReportLine("", "%s:%s" % (str(self.chroms[idx+1]), arch)))
             idx += 1
-        print >> file, BuildReportLine("ENCODING", ["Additive", "Dominant", "Recessive", "Genotype", "Raw"][encoding])
-        print >> file, BuildReportLine("INFO-EXT", Parser.info_ext)
-        print >> file, BuildReportLine("INFO-THRESH", Parser.info_threshold)
+            log.info(BuildReportLine("ENCODING", ["Additive", "Dominant", "Recessive", "Genotype", "Raw"][encoding]))
+            log.info(BuildReportLine("INFO-EXT", Parser.info_ext))
+        log.info(BuildReportLine("INFO-THRESH", Parser.info_threshold))
 
     def load_family_details(self, pheno_covar):
         """Load family data updating the pheno_covar with  family ids found.
@@ -152,28 +217,33 @@ class Parser(DataParser):
         :param pheno_covar: Phenotype/covariate object
         :return: None
         """
-        file = open(self.fam_details)
-        header = file.readline()
-        format = file.readline()
-        self.file_index = 0
+        
+        with open(self.fam_details) as file:
+            header = file.readline()
+            format = file.readline()
+            self.file_index = 0
 
-        mask_components = []        # 1s indicate an individual is to be masked out
-        for line in file:
-            words = line.strip().split()
-            indid = ":".join(words[0:2])
-            if DataParser.valid_indid(indid):
-                mask_components.append(0)
-                sex = int(words[5])
-                pheno = float(words[6])
-                pheno_covar.add_subject(indid, sex, pheno)
-            else:
-                mask_components.append(1)
-        mask_components = numpy.array(mask_components)
-        self.ind_mask = numpy.zeros(len(mask_components) * 2, dtype=numpy.int8).reshape(-1, 2)
-        self.ind_mask[0:, 0] = mask_components
-        self.ind_mask[0:, 1] = mask_components
-        self.ind_count = self.ind_mask.shape[0]
-        pheno_covar.freeze_subjects()
+            mask_components = []        # 1s indicate an individual is to be masked out
+            for line in file:
+                words = line.strip().split()
+                indid = PhenoCovar.build_id(words)
+                if DataParser.valid_indid(indid):
+                    mask_components.append(0)
+                    if len(words) > 3:
+                        sex = int(words[5])
+                        pheno = float(words[6])
+                    else:
+                        sex = DataParser.missing_representation
+                        pheno = DataParser.missing_representation
+                    pheno_covar.add_subject(indid, sex, pheno)
+                else:
+                    mask_components.append(1)
+            mask_components = numpy.array(mask_components)
+            #self.ind_mask = numpy.zeros(len(mask_components), dtype=numpy.int8).reshape(-1, 2)
+            self.ind_mask = numpy.array(mask_components, dtype=numpy.int8)
+            self.ind_count = sum(self.ind_mask == 0)
+            self.geno_mask = self.ind_mask.reshape(-1, 1).repeat(3, axis=1)
+            pheno_covar.freeze_subjects()
 
     def load_genotypes(self):
         """Prepares the files for genotype parsing.
@@ -187,13 +257,18 @@ class Parser(DataParser):
             info_filename = self.current_file.replace(Parser.gen_ext, Parser.info_ext)
             if len(self.info_files) > 0:
                 info_filename = self.info_files[self.file_index]
+            if self.info_file is not None:
+                self.info_file.close()
             self.info_file = open(info_filename)
             self.info_file.readline()   # Dump the header
 
+            if self.freq_file is not None:
+                self.freq_file.close()
             if DataParser.compressed_pedigree:
-                self.freq_file = gzip.open("%s" % (self.current_file), 'rb')
+                self.freq_file = gzip.open("%s" % (self.current_file), 'rt')
             else:
                 self.freq_file = open(self.current_file)
+            self.check_freq_header = True
             self.current_chrom = self.chroms[self.file_index]
             self.file_index += 1
         else:
@@ -204,6 +279,8 @@ class Parser(DataParser):
         run out of archives to process"""
 
         line = self.freq_file.readline().strip().split()
+        if self.check_freq_header and (len(line) > 0 and (line[0] in ['S','s'])):
+            line = self.freq_file.readline().strip().split()
         if len(line) < 1:
             self.load_genotypes()
             line = self.freq_file.readline().strip().split()
@@ -234,10 +311,15 @@ class Parser(DataParser):
             iteration.chr = self.current_chrom
             iteration.pos = int(iteration.pos)
             if DataParser.boundary.TestBoundary(iteration.chr, iteration.pos, iteration.rsid):
-                frequencies = []
+                # frequencies = []
                 idx = 5
-                total_maf = 0.0
-                additive = []
+                # total_maf = 0.0
+                # additive = []
+                genodata = line[idx:]
+                iteration.genotype_data = numpy.ma.MaskedArray(genodata, self.geno_mask).compressed().reshape(-1, 3).astype('float64')
+                iteration.missing_genotypes = iteration.genotype_data[:, 0] == DataParser.missing_storage
+                return True
+                """
                 for is_ignored in self.ind_mask[:,0]:
                     if not is_ignored:
                         AA,Aa,aa = [float(x) for x in line[idx:idx+3]]
@@ -277,6 +359,7 @@ class Parser(DataParser):
                 iteration.genotype_data = numpy.array(frequencies)
 
                 return iteration.maf >= DataParser.min_maf and iteration.maf <= DataParser.max_maf
+                """
             else:
                 return False
         else:
@@ -285,4 +368,6 @@ class Parser(DataParser):
     def __iter__(self):
         """Reset the file and begin iteration"""
 
-        return ParsedLocus(self)
+        loc = ParsedLocus(self)
+        loc._extract_genotypes = gen_dosage_extraction
+        return loc

@@ -1,10 +1,10 @@
+from .parsed_locus import ParsedLocus
+from .locus import Locus
 
-
-from parsed_locus import ParsedLocus
-from locus import Locus
-
-from boundary import BoundaryCheck
+from .boundary import BoundaryCheck
 import numpy
+
+import pdb
 
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
@@ -38,10 +38,13 @@ def check_inclusions(item, included=[], excluded=[]):
     return False
 
 
+
 class DataParser(object):
     """Abstract representation of all dataset parsers
 
     """
+
+    parser_log = None
 
     #: this can be used to filter out loci with too few minor alleles
     min_maf         = 0.00

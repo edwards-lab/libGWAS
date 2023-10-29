@@ -1,8 +1,11 @@
 
 import numpy
-import pheno_covar
+from . import pheno_covar
 
-from exceptions import InvariantVar
+from .exceptions import InvariantVar
+from .exceptions import TooMuchMissingpPhenoCovar
+
+import pdb
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -51,11 +54,16 @@ class StandardizedVariable(object):
         #: standardized phenotype data
         self.phenotypes = None
 
+
+        phidx=0 
         for pheno in pc.phenotype_data:
-            missing = pheno == pheno_covar.PhenoCovar.missing_encoding
+            if pheno.shape[0] == 0:
+                raise TooMuchMissingpPhenoCovar("Pheno", 1.0)
+            missing = pheno == pheno_covar.PhenoCovar.missing_encoding 
             for idx in range(0, self.covar_count):
                 missing = missing | (pc.covariate_data[idx] == pheno_covar.PhenoCovar.missing_encoding)
             self.missing.append(missing)
+            phidx+=1
         #: index of the current phenotype
         self.idx = 0
         #: Reference back to the pheno_covar object for access to raw data
@@ -77,9 +85,14 @@ class StandardizedVariable(object):
         else:
             nonmissing = numpy.invert(self.missing[self.idx] | missing_in_geno)
         nmcount = sum(nonmissing)
+
+        if nmcount == 0:
+            raise TooMuchMissingpPhenoCovar(self.datasource.phenotype_names[self.idx], 1.0)
+
         covars = numpy.zeros((self.covar_count, nmcount))
         for idx in range(0, self.covar_count):
             covars[idx] = self.covariates[idx][nonmissing]
+
             min = covars[idx][covars[idx] != pheno_covar.PhenoCovar.missing_encoding].min()
             max = covars[idx][covars[idx] != pheno_covar.PhenoCovar.missing_encoding].max()
             if min == max:

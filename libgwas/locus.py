@@ -63,7 +63,7 @@ class Locus(object):
         frequency. However, it does allow clients to use the same calls for each
         population without having to perform checks during those calculations.
         """
-
+        #pdb.set_trace()
         maj_count = self.maj_allele_count
         self.maj_allele_count = self.min_allele_count
         self.min_allele_count = maj_count
@@ -135,10 +135,34 @@ class Locus(object):
     def __neq__(self, other):
         return not(self == other)
 
-    def __cmp__(self, other):
+    def _compare(self, other):
         if self.chr == other.chr:
-            return self.pos.__cmp__(other.pos)
-        return self.chr.__cmp__(other.chr)
+            if self.pos < other.pos:
+                return -1
+            if self.pos == other.pos:
+                return 0
+            return 1
+        if self.chr < other.chr:
+            return -1
+        return 1
+
+    def __lt__(self, other):
+        return self._compare(other) < 0
+    
+    def __le__(self, other):
+        return self._compare(other) <= 0
+    
+    def __gt__(self, other):
+        return self._compare(other) > 0
+        
+    def __ge__(self, other):
+        return self._compare(other) >= 0
+        
+    def __eq__(self, other):
+        return self._compare(other) == 0
+        
+    def __ne__(self, other):
+        return self._compare(other) != 0
 
     def __str__(self):
         if self.genotype_data:

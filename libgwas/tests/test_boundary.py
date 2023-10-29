@@ -8,6 +8,7 @@ if "DEBUG" in sys.argv:
     sys.argv.remove("DEBUG")
 from libgwas.boundary import BoundaryCheck
 from libgwas.snp_boundary_check import SnpBoundaryCheck
+from libgwas.exceptions import InvalidChromosome
 import unittest
 
 
@@ -27,12 +28,15 @@ class TestBoundaryInitialization(TestBase):
         # This is just for simplifying command line parsing
         BoundaryCheck.chrom = -1
         b = BoundaryCheck()
-        self.assertEqual(False, b.valid)
+        self.assertEqual(True, b.valid)
 
         # At this point, this should any valid chromosome/position combination
         self.assertTrue(b.TestBoundary(1, 100, ""))
-        self.assertTrue(True, b.TestBoundary(10, 1000000, ""))
-        self.assertTrue(True, b.TestBoundary(25, 10000, ""))
+        self.assertTrue(b.TestBoundary(10, 1000000, ""))
+        self.assertTrue(b.TestBoundary(25, 10000, ""))
+        self.assertTrue(b.TestBoundary('Y', 1400, ""))
+        self.assertFalse(b.TestBoundary('FF', 35, ""))
+        self.assertFalse(b.TestBoundary(28, 10000, ""))
 
         # We should test that our short circuit functionality works
         self.assertTrue(b.NoExclusions())
@@ -56,22 +60,6 @@ class TestBoundaryInitialization(TestBase):
         self.assertEqual(True, b.TestBoundary(1, 250000, ""))
         self.assertEqual(False, b.TestBoundary(2, 250000, ""))
         self.assertEqual(False, b.TestBoundary(10, 10000, ""))
-
-    def testBoundaryInitBPWithInclusions(self):
-        BoundaryCheck.chrom = 1
-        b = BoundaryCheck(bp=[10000, 500000])
-        b.LoadSNPs(["rs12345", "rs23456"])
-        self.assertFalse(b.NoExclusions())
-        self.assertTrue(b.valid)
-        self.assertEqual(False, b.TestBoundary(1, 500, ""))
-        self.assertEqual(True, b.TestBoundary(1, 10000, ""))
-        self.assertEqual(True, b.TestBoundary(1, 500000, ""))
-        self.assertEqual(True, b.TestBoundary(1, 250000, ""))
-        self.assertEqual(False, b.TestBoundary(2, 250000, ""))
-        self.assertEqual(False, b.TestBoundary(10, 10000, ""))
-        self.assertTrue(b.TestBoundary(1, 1000000, "rs12345"))
-        self.assertTrue(b.TestBoundary(1, 1200000, "rs23456"))
-        self.assertFalse(b.TestBoundary(1, 1200011, "rs345678"))
 
     def testBoundaryInitBPWithExclusions(self):
         BoundaryCheck.chrom = 1
@@ -101,6 +89,36 @@ class TestBoundaryInitialization(TestBase):
         self.assertEqual(False, b.TestBoundary(5, 50001, ""))
         self.assertEqual(False, b.TestBoundary(1, 25000, ""))
         self.assertEqual(False, b.TestBoundary(10, 20000, ""))
+
+    def testBoundaryX(self):
+        BoundaryCheck.set_chrom('X')
+        b = BoundaryCheck()
+        self.assertEqual(23, BoundaryCheck.chrom)
+        self.assertEqual('X', BoundaryCheck.chrom_name)
+        self.assertTrue(b.TestBoundary('x', 100, "rs100"))
+        self.assertTrue(b.TestBoundary('X', 1000, "rs1000"))
+        self.assertTrue(b.TestBoundary(23, 1000, "rs1000"))
+        self.assertFalse(b.TestBoundary('Y', 100, "rs100"))
+
+    def testBoundaryY(self):
+        BoundaryCheck.set_chrom('y')
+        self.assertEqual(24, BoundaryCheck.chrom)
+        self.assertEqual('y', BoundaryCheck.chrom_name)
+
+    def testInvalidChrom(self):
+        self.assertRaises(InvalidChromosome, BoundaryCheck.set_chrom, '_my_chrom:1')
+
+    def testBoundaryChr10(self):
+        BoundaryCheck.set_chrom('chr10')
+        b = BoundaryCheck(mb=[1,3])
+        self.assertTrue(b.valid)
+        self.assertFalse(b.NoExclusions())
+        self.assertTrue(b.TestBoundary(10, 1000000, ""))
+        self.assertTrue(b.TestBoundary(10, 1200000, ""))
+        self.assertTrue(b.TestBoundary(10, 3000000, ""))
+        self.assertFalse(b.TestBoundary(10, 3000001, ""))
+        self.assertFalse(b.TestBoundary(10, 999999, ""))
+        self.assertFalse(b.TestBoundary(1, 1000500, ""))
 
     def testBoundaryInitMB(self):
         BoundaryCheck.chrom = 10
@@ -183,6 +201,7 @@ class TestSnpBoundaryInitialization(TestBase):
         self.assertFalse(b.TestBoundary(21, 2500000, "rs987654321"))
         self.assertTrue(b.TestBoundary(22, 2500000, "rs987654321"))
 
+
 class TestSnpBoundaryInitializationNoChr(TestBase):
     """We are labelling the missing chromosomes in MACH as NA (as are positions).
     """
@@ -234,8 +253,6 @@ class TestSnpBoundaryInitializationNoChr(TestBase):
         self.assertFalse(b.TestBoundary("NA", "NA", "1:650"))
         self.assertFalse(b.TestBoundary(21, "NA", "1:987654321"))
         self.assertTrue(b.TestBoundary("NA", "NA", "1:987654321"))
-
-
 
 
 if __name__ == "__main__":

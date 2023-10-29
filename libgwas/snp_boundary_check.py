@@ -1,8 +1,8 @@
 import collections
-from exceptions import InvalidBoundarySpec
+from .exceptions import InvalidBoundarySpec
 from . import BuildReportLine
 import os
-from boundary import BoundaryCheck
+from .boundary import BoundaryCheck
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -71,7 +71,7 @@ class SnpBoundaryCheck(BoundaryCheck):
                     self.start_bounds.append(bounds[0])
                     self.end_bounds.append(bounds[1])
                 else:
-                    print "Invalid Bound Size of %s at locus: %s" % (bound_size, snp)
+                    print("Invalid Bound Size of %s at locus: %s" % (bound_size, snp))
                     raise InvalidBoundarySpec(snp)
         self.valid          = len(self.target_rs)+len(self.start_bounds) > 0
     def ReportConfiguration(self, f):
@@ -82,14 +82,14 @@ class SnpBoundaryCheck(BoundaryCheck):
         """
 
         if BoundaryCheck.chrom != -1:
-            print >> f, BuildReportLine("CHROM", BoundaryCheck.chrom)
+            print(BuildReportLine("CHROM", BoundaryCheck.chrom), file=f)
             if len(self.start_bounds) > 0:
                 bounds = ",".join(["%s-%s" % (a[0], a[1]) for a in zip(self.start_bounds, self.end_bounds)])
-                print >> f, BuildReportLine("SNP BOUNDARY", bounds)
+                print(BuildReportLine("SNP BOUNDARY", bounds), file=f)
         if len(self.ignored_rs) > 0:
-            print >> f, BuildReportLine("IGNORED RS", ",".join(self.ignored_rs))
+            print(BuildReportLine("IGNORED RS", ",".join(self.ignored_rs)), file=f)
         if len(self.target_rs) > 0:
-            print >> f, BuildReportLine("TARGET RS", ",".join(self.target_rs))
+            print(BuildReportLine("TARGET RS", ",".join(self.target_rs)), file=f)
 
 
 

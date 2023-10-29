@@ -1,9 +1,11 @@
-from data_parser import DataParser
-from parsed_locus import ParsedLocus
-from exceptions import TooManyAlleles
-from exceptions import TooFewAlleles
+from .data_parser import DataParser
+from .parsed_locus import ParsedLocus
+from .exceptions import TooManyAlleles
+from .exceptions import TooFewAlleles
 import gzip
 import numpy
+from .pheno_covar import PhenoCovar
+import logging
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -37,7 +39,7 @@ class Parser(DataParser):
         self.tfam_file = tfam
         self.tped_file = tped
         self.families = []
-        self.genotype_file = tped
+        self.genotype_file = None
         self.alleles = []
         self.ind_count = -1
 
@@ -45,6 +47,15 @@ class Parser(DataParser):
         self.name = tped.split("/")[-1].split(".")[0]
 
         self.parser_name = self.name
+
+        #: Subjects dropped by user or don't match phenotype/covariate id list
+        self.ind_mask = None
+
+        #: Subjects dropped due to missing individual threshold
+        self.alt_not_missing = None
+
+        #: Count of valid loci without filtering on missingness other than explicit drops
+        self.locus_count = -1
 
     def initialize(self, map3=None, pheno_covar=None):
         # Required for some parser types
@@ -56,9 +67,10 @@ class Parser(DataParser):
         return Parser(self.tfam_file, self.tped_file)
 
 
-    def ReportConfiguration(self, file):
-        print >> file, BuildReportLine("TPED FILE", self.tped_file)
-        print >> file, BuildReportLine("TFAM FILE", self.tfam_file)
+    def ReportConfiguration(self):
+        log = logging.getLogger('tped_parser::ReportConfiguration')
+        log.info(BuildReportLine("TPED_FILE", self.tped_file))
+        log.info(BuildReportLine("TFAM FILE", self.tfam_file))
 
     def load_tfam(self, pheno_covar):
         """Load the pedigree portion of the data and sort out exclusions"""
@@ -73,25 +85,26 @@ class Parser(DataParser):
 
         sex_col = pheno_col - 1
         mask_components = []
-        for line in open(self.tfam_file):
-            words = line.strip().split()
-            if len(words) > 1:
-                indid = ":".join(words[0:2])
-                if DataParser.valid_indid(indid):
-                    mask_components.append(0)
+        with open(self.tfam_file) as f:
+            for line in f:
+                words = line.strip().split()
+                if len(words) > 1:
+                    indid = PhenoCovar.build_id(words)
+                    if DataParser.valid_indid(indid):
+                        mask_components.append(0)
 
-                    sex = None
-                    pheno = None
-                    if DataParser.has_sex:
-                        sex = int(words[sex_col])
-                    if DataParser.has_pheno:
-                        pheno = float(words[pheno_col])
-                    if pheno_covar is not None:
-                        pheno_covar.add_subject(indid, sex, pheno)
-                    if len(words) > 0:
-                        self.families.append(words)
-                else:
-                    mask_components.append(1)
+                        sex = None
+                        pheno = None
+                        if DataParser.has_sex:
+                            sex = int(words[sex_col])
+                        if DataParser.has_pheno:
+                            pheno = float(words[pheno_col])
+                        if pheno_covar is not None:
+                            pheno_covar.add_subject(indid, sex, pheno)
+                        if len(words) > 0:
+                            self.families.append(words)
+                    else:
+                        mask_components.append(1)
         mask_components = numpy.array(mask_components)
         self.ind_mask = numpy.zeros(len(mask_components) * 2, dtype=numpy.int8).reshape(-1, 2)
         self.ind_mask[0:, 0] = mask_components
@@ -102,13 +115,21 @@ class Parser(DataParser):
             pheno_covar.freeze_subjects()
         self.load_genotypes()
 
+
+    def __del__(self):
+        if self.genotype_file is not None:
+            self.genotype_file.close()
+
     def load_genotypes(self):
         """This really just intializes the file by opening it up. """
 
+        if self.genotype_file is not None:
+            self.genotype_file.close()
         if DataParser.compressed_pedigree:
-            self.genotype_file = gzip.open("%s.gz" % self.tped_file, 'rb')
+            self.genotype_file = gzip.open("%s.gz" % self.tped_file, 'rt')
         else:
             self.genotype_file = open(self.tped_file)
+
         self.filter_missing()
 
     def process_genotypes(self, data):
@@ -122,8 +143,12 @@ class Parser(DataParser):
 
         """
         # Get a list of uniq entries in the data, except for missing
-        alleles = list(set(data[4:]) - set(DataParser.missing_representation))
+        alleles = list(set(data[4:]) - set([DataParser.missing_representation]))
         if len(alleles) > 2:
+            print(alleles)
+            print(data[4:])
+            print(DataParser.missing_representation)
+            print((set(data[4:]) - set(['0'])))
             raise TooManyAlleles(chr=self.chr, rsid=self.rsid, alleles=alleles)
 
         # We don't have a way to know this in advance, so we want to just iterate onward
@@ -132,11 +157,11 @@ class Parser(DataParser):
             raise TooFewAlleles(chr=self.chr, rsid=self.rsid, alleles=alleles)
 
         # Strip out any excluded individuals
-        allelic_data = numpy.ma.MaskedArray(numpy.array(data[4:], dtype="S2"), self.ind_mask).compressed().reshape(-1, 2)
+        allelic_data = numpy.ma.MaskedArray(numpy.array(data[4:], dtype=str), self.ind_mask).compressed().reshape(-1, 2)
 
-        maj_allele_count = numpy.sum(allelic_data==alleles[0])
+        maj_allele_count = numpy.sum(allelic_data == alleles[0])
 
-        min_allele_count = numpy.sum(allelic_data==alleles[1])
+        min_allele_count = numpy.sum(allelic_data == alleles[1])
 
         effect_allele_count = min_allele_count
         if min_allele_count > maj_allele_count:
@@ -146,14 +171,14 @@ class Parser(DataParser):
             min_allele_count = allele_count
 
         #genotypes = []
-        major_allele       = alleles[0]
-        minor_allele       = alleles[1]
+        major_allele = alleles[0]
+        minor_allele = alleles[1]
 
         # Genotypes represent the sum of minor alleles at each sample
-        genotype_data = numpy.sum(allelic_data==minor_allele, axis=1)
-        missing_alleles = allelic_data[:, 0]==DataParser.missing_representation
+        genotype_data = numpy.sum(allelic_data == minor_allele, axis=1)
+        missing_alleles = allelic_data[:, 0] == DataParser.missing_representation
         genotype_data[missing_alleles] = DataParser.missing_storage
-        hetero_count = numpy.sum(genotype_data==1)
+        hetero_count = numpy.sum(genotype_data == 1)
 
         return (genotype_data,
                 major_allele,
@@ -161,40 +186,16 @@ class Parser(DataParser):
                 hetero_count,
                 maj_allele_count,
                 min_allele_count,
-                numpy.sum(missing_alleles),
+                missing_alleles,
                 effect_allele_count)
 
     def filter_missing(self):
         """Filter out individuals and SNPs that have too many missing to be considered"""
 
-        missing             = None
-        locus_count         = 0
+        missing = None
+        locus_count = 0
 
         # Filter out individuals according to missingness
-        self.genotype_file.seek(0)
-        for genotypes in self.genotype_file:
-            genotypes = genotypes.split()
-            chr, rsid, junk, pos = genotypes[0:4]
-            if DataParser.boundary.TestBoundary(chr, pos, rsid):
-                locus_count += 1
-                allelic_data = numpy.array(genotypes[4:], dtype="S2").reshape(-1, 2)
-                if missing is None:
-                    missing             = numpy.zeros(allelic_data.shape[0], dtype='int8')
-                missing += (numpy.sum(0+(allelic_data==DataParser.missing_representation), axis=1)/2)
-
-        max_missing = DataParser.ind_miss_tol * locus_count
-        dropped_individuals = 0+(max_missing<missing)
-
-        self.ind_mask[:,0] = self.ind_mask[:,0]|dropped_individuals
-        self.ind_mask[:,1] = self.ind_mask[:,1]|dropped_individuals
-
-        valid_individuals = numpy.sum(self.ind_mask==0)
-        max_missing = DataParser.snp_miss_tol * valid_individuals
-
-        self.locus_count = 0
-        # We can't merge these two iterations since we need to know which individuals
-        # to consider for filtering on MAF
-        dropped_snps = []
         self.genotype_file.seek(0)
         for genotypes in self.genotype_file:
             genotypes = genotypes.split()
@@ -202,21 +203,32 @@ class Parser(DataParser):
             chr = int(chr)
             pos = int(pos)
             if DataParser.boundary.TestBoundary(chr, pos, rsid):
-                allelic_data = numpy.ma.MaskedArray(numpy.array(genotypes[4:], dtype="S2").reshape(-1, 2), self.ind_mask).compressed()
-                missing = numpy.sum(0+(allelic_data==DataParser.missing_representation))
-                if missing > max_missing:
-                    DataParser.boundary.dropped_snps[int(chr)].add(int(pos))
-                    dropped_snps.append(rsid)
-                else:
-                    self.locus_count += 1
+                locus_count += 1
+                allelic_data = numpy.array(genotypes[4:], dtype=str).reshape(-1, 2)
+                if missing is None:
+                    missing = numpy.zeros(allelic_data.shape[0], dtype='int8')
+                missing += (numpy.sum(0+(allelic_data==DataParser.missing_representation), axis=1) * 0.5).astype(int)
 
+
+        if missing is not None:
+            max_missing = DataParser.ind_miss_tol * locus_count
+            dropped_individuals = 0+(max_missing<missing)
+
+            if sum(dropped_individuals) > 0:
+                # This will be ORd, so it needs to be one for not
+                self.alt_not_missing = dropped_individuals != 1
+                self.alt_not_missing = self.alt_not_missing[self.ind_mask[0:, 0] != 1]
+        self.locus_count = locus_count
 
 
     def populate_iteration(self, iteration):
         """Pour the current data into the iteration object"""
 
         cur_idx = iteration.cur_idx
-        genotypes = self.genotype_file.next().split()
+        
+        # Let's go ahead and set those alleles as bytes, but
+        # we'll need to fix the rest
+        genotypes = next(self.genotype_file).split()
         iteration.chr, iteration.rsid, junk, iteration.pos = genotypes[0:4]
         iteration.chr = int(iteration.chr)
         iteration.pos = int(iteration.pos)
@@ -229,11 +241,13 @@ class Parser(DataParser):
                     iteration.hetero_count,
                     iteration.maj_allele_count,
                     iteration.min_allele_count,
-                    iteration.missing_allele_count,
+                    iteration.missing_genotypes,
                     iteration.allele_count2] = self.process_genotypes(genotypes)
-                return iteration.maf >= DataParser.min_maf and iteration.maf <= DataParser.max_maf
+                iteration.missing_allele_count = numpy.sum(iteration.missing_genotypes)
+                return True
+                #return iteration.maf >= DataParser.min_maf and iteration.maf <= DataParser.max_maf
             except TooFewAlleles:
-                print "\n\n\nSkipping %s:%s %s %s" % (iteration.chr, iteration.pos, iteration.rsid, cur_idx)
+                print("\n\n\nSkipping %s:%s %s %s" % (iteration.chr, iteration.pos, iteration.rsid, cur_idx))
 
         return False
 
@@ -243,4 +257,6 @@ class Parser(DataParser):
         """Reset the file and begin iteration"""
 
         self.genotype_file.seek(0)
+        # Make sure this didn't get tripped and remain wrongfully telling us we are finished
+        DataParser.boundary.beyond_upper_bound = False
         return ParsedLocus(self)

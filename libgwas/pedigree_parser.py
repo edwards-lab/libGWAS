@@ -2,11 +2,14 @@ import gzip
 
 import numpy
 
-from data_parser import DataParser
-from exceptions import MalformedInputFile
-from exceptions import TooManyAlleles
+from .data_parser import DataParser
+from .exceptions import MalformedInputFile
+from .exceptions import TooManyAlleles
+from .exceptions import TooFewAlleles
 from . import sys_call
 from . import BuildReportLine
+from .pheno_covar import PhenoCovar
+import logging
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"
@@ -48,6 +51,7 @@ class Parser(DataParser):
         self.mapfile = mapfile
         #: Filename for the actual pedigree information
         self.datasource = datasource
+        #: List of valid Locus Objects
         self.markers = []
         #: Matrix of genotype data
         self.genotypes = []
@@ -57,17 +61,19 @@ class Parser(DataParser):
         #: data (each position represents an individual)
         self.individual_mask = 0
 
+        self.ind_count = 0
+        self.snp_mask = None
         #: Number of valid loci
-        locus_count = None
-        #: List of valid Locus Objects
-        markers = None
+        self.locus_count = None
         #: List of both alleles for each valid locus
-        alleles = None
+        self.alleles = None
         #: List of all SNP names for valid loci
-        rsids = None
+        self.rsids = None
         #: List of MAF at each locus
-        markers_maf = None
+        self.markers_maf = None
 
+        #: Subjects dropped due to missing individual threshold
+        self.alt_not_missing = None
         #: Name used for reporting information about this dataset
         self.name = datasource.split("/")[-1].split(".")[0]
         self.parser_name = self.name
@@ -79,15 +85,15 @@ class Parser(DataParser):
         self.load_mapfile(map3=map3)
         self.load_genotypes(pheno_covar)
 
-
-    def ReportConfiguration(self, file):
+    def ReportConfiguration(self):
         """ Report configuration for logging purposes.
 
         :param file: Destination for report details
         :return: None
         """
-        print >> file, BuildReportLine("PED FILE", self.datasource)
-        print >> file, BuildReportLine("MAP FILE", self.mapfile)
+        log = logging.getLogger('ped_parser::ReportConfiguration')
+        log.info(BuildReportLine("PED FILE", self.datasource))
+        log.info(BuildReportLine("MAP FILE", self.mapfile))
 
     def load_mapfile(self, map3=False):
         """Load the marker data
@@ -130,7 +136,7 @@ class Parser(DataParser):
                     self.rsids.append(locus[1])
                     self.snp_mask[idx] = 0
                 idx += 1
-            self.markers = numpy.array(self.markers, dtype=numpy.int)
+            self.markers = numpy.array(self.markers, dtype=int)
             self.rsids   = numpy.array(self.rsids)
 
         # We don't follow these rules here
@@ -146,7 +152,7 @@ class Parser(DataParser):
         information
         :return: None
         """
-
+        log = logging.getLogger('ped_parser::ReportConfiguration')
         first_genotype = 6
         pheno_col      = 5
         if not DataParser.has_sex:
@@ -173,19 +179,19 @@ class Parser(DataParser):
                 self.snp_mask[:, 0]==0) * DataParser.ind_miss_tol
 
         if DataParser.compressed_pedigree:
-            ind_count, err = sys_call("gzip -cd %s | wc -l" %
+            ind_count = sys_call("gzip -cd %s | wc -l" %
                                       ("%s.gz" % (self.datasource)))
         else:
-            ind_count, err = sys_call("wc -l %s" % (self.datasource))
-        ind_count = int(ind_count[0].split()[0]) + 1
+            ind_count = sys_call("wc -l %s" % (self.datasource))
+        ind_count = int(ind_count.split()[0]) + 1
 
         snp_count = numpy.sum(self.snp_mask[:, 0] == 0)
 
-        allelic_data = numpy.empty((ind_count, snp_count, 2), dtype='S1')
+        allelic_data = numpy.empty((ind_count, snp_count, 2), dtype=str)
 
         valid_allele_count = 0
         if DataParser.compressed_pedigree:
-            input_file = gzip.open("%s.gz" % self.datasource, 'rb')
+            input_file = gzip.open("%s.gz" % self.datasource, 'rt')
         else:
             input_file = open(self.datasource)
 
@@ -198,7 +204,7 @@ class Parser(DataParser):
                         self.snp_mask).compressed().reshape(-1, 2)
 
                 # Convert the alleles into genotypes
-                indid = ":".join(raw_data[0:2])
+                indid = PhenoCovar.build_id(raw_data)
                 if not DataParser.has_fid:
                     indid = raw_data[0]
 
@@ -229,6 +235,7 @@ class Parser(DataParser):
                 else:
                     individual_mask += [1, 1]
                     self.individual_mask.append(1)
+        input_file.close()
         self.ind_count = valid_allele_count
         allelic_data = allelic_data[0:valid_allele_count]
         self.genotypes = numpy.empty((snp_count, valid_allele_count))
@@ -241,68 +248,45 @@ class Parser(DataParser):
         valid_allele_list = []
         allele_count2s = []
 
-        for i in xrange(0, snp_count):
+        for i in range(0, snp_count):
+            valid = True
             snp_geno = allelic_data[:,i]
-            alleles = list(set(numpy.unique(snp_geno)) -
-                           set([DataParser.missing_representation]))
+            alleles, allele_counts = numpy.unique(snp_geno, return_counts=True)
+            allele_counts = dict(list(zip(alleles, allele_counts)))
+            alleles = sorted(alleles)
+            alleles = sorted(list(set(alleles) - set([DataParser.missing_representation])))
 
             if len(alleles) > 2:
-                raise TooManyAlleles(chr=self.markers[i][0],
-                                     rsid=self.rsids[i],
-                                     alleles=alleles)
+                valid = False
 
-            allele_count1 = numpy.sum(snp_geno==alleles[0])
-            allele_count2 = 0
-            maf = 0
+                log.info("Too many alleles: %s:%s %s" % (str(self.markers[i][0]), self.rsids[i], alleles))
+                DataParser.boundary.ignored_rs.append(self.rsids[i])
 
-            if len(alleles) > 1:
-                allele_count2 = numpy.sum(snp_geno==alleles[1])
-                real_allele_count2 = allele_count2
+            if len(alleles) < 2:
+                valid = False
+                log.info("Too few alleles: %s:%s %s" % (str(self.markers[i][0]), self.rsids[i], alleles))
+                DataParser.boundary.ignored_rs.append(self.rsids[i])
 
-                if allele_count2 > allele_count1:
-                    sorted_alleles = [alleles[1], alleles[0]]
-                    alleles = sorted_alleles
-                    allele_count = allele_count1
-                    allele_count1 = allele_count2
-                    allele_count2 = allele_count
-                maf = allele_count2 / float(allele_count1 + allele_count2)
-                allele_count2s.append(allele_count2)
-                #genotypes = []
-                major_allele       = alleles[0]
-                minor_allele       = alleles[1]
 
-                genotype_data = numpy.sum(snp_geno==alleles[1], axis=1)
-                genotype_data[
-                    snp_geno[:, 0]==DataParser.missing_representation] = \
-                    DataParser.missing_storage
-            else:
-                major_allele = alleles[0]
-                minor_allele = '?'
+            if valid:
+                # Let's order the genotypes according to allele freq
+                #print i, alleles, allele_counts
+                if allele_counts[alleles[0]] < allele_counts[alleles[1]]:
+                    alleles = [alleles[1], alleles[0]]
 
-            missing = numpy.sum(genotype_data==DataParser.missing_storage)
-            if maf == 0 or maf < DataParser.min_maf or \
-                            maf > DataParser.max_maf or \
-                            max_missing_individuals < missing:
-                locus_details = self.markers[i]
-                DataParser.boundary.dropped_snps[
-                    locus_details[0]].add(locus_details[1])
-                dropped_loci.append("%s:%s" % (locus_details[0],
-                                               locus_details[1]))
-                self.invalid_loci.append(i)
-            else:
+                genotype_data = numpy.sum(snp_geno == alleles[1], axis=1)
+                # Correct the missing stuff, since those will have summed up to be nonsense
+                genotype_data[snp_geno[:, 0] == DataParser.missing_representation] = DataParser.missing_storage
+
                 self.genotypes[valid_snps, :] = genotype_data
                 valid_snps += 1
                 valid_markers.append(list(self.markers[i]))
                 valid_rsids.append(self.rsids[i])
-                valid_allele_list.append([major_allele, minor_allele])
-                valid_maf.append(maf)
 
         self.markers = valid_markers
-        self.alleles = valid_allele_list
         self.rsids   = valid_rsids
         self.locus_count = valid_snps
         self.genotypes = self.genotypes[0:self.locus_count, :]
-        self.allele_count2s = allele_count2s
 
     def get_loci(self):
         return self.markers
@@ -323,16 +307,22 @@ class Parser(DataParser):
             iteration.chr = self.markers[cur_idx][0]
             iteration.pos = self.markers[cur_idx][1]
             iteration.rsid = self.rsids[cur_idx]
+            iteration.genotype_data = self.genotypes[cur_idx, :]
+            iteration.missing_genotypes = iteration.genotype_data == DataParser.missing_storage
+            return True
+            """
+            iteration.allele_count2 = self.allele_count2s[cur_idx]
+
             iteration.major_allele = self.alleles[cur_idx][0]
             iteration.minor_allele = self.alleles[cur_idx][1]
-            iteration.allele_count2 = self.allele_count2s[cur_idx]
-            iteration.genotype_data = self.genotypes[cur_idx, :]
+
             hetero = numpy.sum(iteration.genotype_data==1)
             iteration.min_allele_count = numpy.sum(
                 iteration.genotype_data==2)*2 + hetero
             iteration.maj_allele_count = numpy.sum(
                 iteration.genotype_data==0)*2 + hetero
             return True
+            """
         else:
             raise StopIteration
 

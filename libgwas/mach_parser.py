@@ -1,16 +1,18 @@
-from data_parser import DataParser
-from parsed_locus import ParsedLocus
+from .data_parser import DataParser
+from .parsed_locus import ParsedLocus
 from . import sys_call
 from . import ExitIf
 import sys
-from exceptions import TooManyAlleles
-from exceptions import TooFewAlleles
+from .exceptions import TooManyAlleles
+from .exceptions import TooFewAlleles
 import gzip
 import numpy
-from exceptions import InvalidSelection
+from .exceptions import InvalidSelection
 import os
 
-from pheno_covar import PhenoCovar
+import logging
+from .pheno_covar import PhenoCovar
+from . import boundary
 
 __copyright__ = "Todd Edwards, Chun Li & Eric Torstenson"
 __license__ = "GPL3.0"
@@ -91,6 +93,7 @@ class Parser(DataParser):
         This function assumes that all dosage files have the same sample order \
             (as with the output from minimac)
         """
+        boundary.BoundaryCheck.chrom_conversion['NA'] = -1
         smallest = -1
 
         # We'll use the smallest file to determine the sample order
@@ -143,28 +146,28 @@ class Parser(DataParser):
 
         assert len(self.info_files) == len(self.archives)
 
-
-    def ReportConfiguration(self, file):
+    def ReportConfiguration(self):
         """Report the configuration details for logging purposes.
 
         :param file: Destination for report details
         :return: None
         """
+        log = logging.getLogger('mach_parser::ReportConfiguration')
         global encodingpar
-        print >> file, libgwas.BuildReportLine("MACH_ARCHIVES", "")
+        log.info(libgwas.BuildReportLine("MACH_ARCHIVES", ""))
         if self.chrpos_encoding:
-            print >> file, libgwas.BuildReportLine("MACH_CHRPOS",
+            log.info(libgwas.BuildReportLine("MACH_CHRPOS",
                                     ("IDS expected to be in format chr:pos" +
                                     " SNP boundary filters might not work " +
-                                    "(see manual for details)"))
+                                    "(see manual for details)")))
         else:
-            print >> file, libgwas.BuildReportLine("MACH_CHRPOS",
-                                    "IDs are treated like RSIDs")
+            log.info(libgwas.BuildReportLine("MACH_CHRPOS",
+                                    "IDs are treated like RSIDs"))
         idx = 0
         for arch in self.archives[0:]:
-            print >> file, libgwas.BuildReportLine("", "%s:%s" % (self.archives[idx], self.info_files[idx]))
+            log.info(libgwas.BuildReportLine("", "%s:%s" % (self.archives[idx], self.info_files[idx])))
             idx += 1
-        print >> file, libgwas.BuildReportLine("ENCODING", ["Dosage", "Genotype"][encoding])
+        log.info(libgwas.BuildReportLine("ENCODING", ["Dosage", "Genotype"][encoding]))
 
 
     def load_family_details(self, pheno_covar):
@@ -180,27 +183,29 @@ class Parser(DataParser):
 
         file = self.family_details
         if DataParser.compressed_pedigree:
-            data, serr = sys_call('gunzip -c %s | wc -l' % (file))
-            self.line_count = int(data[0].strip().split(" ")[0])
-            iddata, serr = sys_call('gunzip -c %s | cut -f 1' % (file))
+            data = sys_call('gunzip -c %s | wc -l' % (file))
+            self.line_count = int(data.strip().split(" ")[0])
+            iddata = sys_call('gunzip -c %s | cut -f 1' % (file))
         else:
-            data, serr = sys_call('wc -l %s' % (file))
-            self.line_count = int(data[0].strip().split(" ")[0])
-            iddata, serr = sys_call('cat %s | cut -f 1' % (file))
+            data = sys_call('wc -l %s' % (file))
+            self.line_count = int(data.strip().split(" ")[0])
+            iddata = sys_call('cat %s | cut -f 1' % (file))
 
         ids_observed = set()
-        for line in iddata:
-            indid = line.strip().split()[0]
-            indid = ":".join(indid.split("->"))
+        
+        for line in iddata.split("\n"):
+            if len(line) > 0:
+                indid = line.strip().split()[0]
+                indid = ":".join(indid.split("->"))
 
-            ExitIf("Duplicate ID found in dose file: %s" % (indid), indid in ids_observed)
-            ids_observed.add(indid)
+                ExitIf("Duplicate ID found in dose file: %s" % (indid), indid in ids_observed)
+                ids_observed.add(indid)
 
-            if DataParser.valid_indid(indid):
-                mask_components.append(0)
-                pheno_covar.add_subject(indid, PhenoCovar.missing_encoding, PhenoCovar.missing_encoding)
-            else:
-                mask_components.append(1)
+                if DataParser.valid_indid(indid):
+                    mask_components.append(0)
+                    pheno_covar.add_subject(indid, PhenoCovar.missing_encoding, PhenoCovar.missing_encoding)
+                else:
+                    mask_components.append(1)
 
         self.ind_mask = numpy.array(mask_components) == 1
         self.ind_count = self.ind_mask.shape[0]
@@ -208,7 +213,7 @@ class Parser(DataParser):
 
     def openfile(self, filename):
         if DataParser.compressed_pedigree:
-            return gzip.open(filename, 'rb')
+            return gzip.open(filename, 'rt')
         return open(filename, 'r')
 
     def parse_genotypes(self, lb, ub):
@@ -220,21 +225,22 @@ class Parser(DataParser):
         :return: Dosage dosages for current chunk
 
         """
-        file = self.openfile(self.current_file)
-        words = file.readline().strip().split()[lb:ub]
-        word_count = len(words)
-        idx =0
+        with self.openfile(self.current_file) as file:
+            words = file.readline().strip().split()[lb:ub]
+            word_count = len(words)
+            idx =0
 
-        if word_count > 0:
-            dosages = numpy.empty((self.ind_count, word_count), dtype='|S5')
-            while word_count > 1:
-                dosages[idx] = numpy.array(words)
-                idx += 1
-                line = file.readline()
-                words = line.strip().split()[lb:ub]
-                word_count = len(words)
-        else:
-            raise EOFError
+            if word_count > 0:
+                dosages = numpy.empty((self.ind_count, word_count), dtype='|S5')
+                while word_count > 1:
+                    dosages[idx] = numpy.array(words)
+                    idx += 1
+                    line = file.readline()
+                    words = line.strip().split()[lb:ub]
+                    word_count = len(words)
+            else:
+                file.close()
+                raise EOFError
 
         return dosages
 
@@ -280,48 +286,48 @@ class Parser(DataParser):
         # too big considering ours are 60+ gigs
         self.dosages = numpy.transpose(buff)
 
-        file = self.openfile(self.info_file)
-        file.readline()     # drop header
+        with self.openfile(self.info_file) as file:
+            file.readline()     # drop header
 
-        lindex = 0
-        while lindex < lb - 2:
-            file.readline()
-            lindex += 1
-
-        self.markers = []
-        self.rsids = []
-        self.locus_count= 0
-        self.maf = []
-        self.alleles = []
-        self.rsquared = []
-
-        while lindex < (ub - 2):
-            words = file.readline().strip().split()
-            if len(words) > 0:
-                loc, al2, al1, freq1, maf, avgcall,rsq = words[0:7]
-                marker = [-1, lindex]
-                if self.chrpos_encoding:
-                    marker = [int(x) for x in loc.split(":")[0:2]]
-                    if len(marker) < 2:
-                        raise libgwas.exceptions.MalformedInputFile("MACH .info"+
-                                " file IDs must be in the format chrom:rsid")
-                    if len(marker) > 2:
-                        self.rsids.append(marker[2])
-                    self.markers.append(marker[0:2])
-                else:
-                    self.markers.append(lindex)
-                    self.rsids.append(loc)
-                self.maf.append(float(maf))
-                self.alleles.append([al1, al2])
-                self.rsquared.append(float(rsq))
+            lindex = 0
+            while lindex < lb - 2:
+                file.readline()
                 lindex += 1
-            else:
-                break
+
+            self.markers = []
+            self.rsids = []
+            self.locus_count= 0
+            self.maf = []
+            self.alleles = []
+            self.rsquared = []
+
+            while lindex < (ub - 2):
+                words = file.readline().strip().split()
+                if len(words) > 0:
+                    loc, al2, al1, freq1, maf, avgcall,rsq = words[0:7]
+                    marker = [-1, lindex]
+                    if self.chrpos_encoding:
+                        marker = [int(x) for x in loc.split(":")[0:2]]
+                        if len(marker) < 2:
+                            raise libgwas.exceptions.MalformedInputFile("MACH .info"+
+                                    " file IDs must be in the format chrom:rsid")
+                        if len(marker) > 2:
+                            self.rsids.append(marker[2])
+                        self.markers.append(marker[0:2])
+                    else:
+                        self.markers.append(lindex)
+                        self.rsids.append(loc)
+                    self.maf.append(float(maf))
+                    self.alleles.append([al1, al2])
+                    self.rsquared.append(float(rsq))
+                    lindex += 1
+                else:
+                    break
 
         if self.dosages.shape[0] != len(self.markers):
-            print >> sys.stderr, "What is going on? I have ", \
+            print("What is going on? I have ", \
                     self.dosages.shape[0], "dosages per individual and ", \
-                    len(self.markers), self.markers
+                    len(self.markers), self.markers, file=sys.stderr)
 
         self.chunk += 1
         self.marker_count = len(self.markers)
@@ -355,6 +361,7 @@ class Parser(DataParser):
 
         if self.chrpos_encoding:
             iteration.chr, iteration.pos = self.markers[cur_idx]
+            iteration.pos = int(iteration.pos)
         else:
             iteration.chr = "NA"
             iteration.pos = "NA"
@@ -362,7 +369,7 @@ class Parser(DataParser):
 
         if cur_idx < len(self.markers) and DataParser.boundary.TestBoundary(iteration.chr, iteration.pos, iteration.rsid) and self.rsquared[cur_idx] >= Parser.min_rsquared:
             iteration.major_allele, iteration.minor_allele = self.alleles[cur_idx]
-            iteration.genotype_data = numpy.ma.masked_array(self.dosages[cur_idx].astype(numpy.float), self.ind_mask).compressed()
+            iteration.genotype_data = numpy.ma.masked_array(self.dosages[cur_idx].astype(float), self.ind_mask).compressed()
             iteration._maf = numpy.mean(iteration.genotype_data/2)
             iteration.allele_count2 = (iteration.genotype_data.shape[0] * 4.0 - numpy.sum(iteration.genotype_data))
 

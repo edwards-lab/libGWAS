@@ -1,10 +1,13 @@
 import numpy
-from exceptions import MalformedInputFile
-from exceptions import InvalidSelection
-from exceptions import InvariantVar
-from exceptions import NoMatchedPhenoCovars
-from standardizer import get_standardizer
+from .exceptions import MalformedInputFile
+from .exceptions import InvalidSelection
+from .exceptions import InvariantVar
+from .exceptions import NoMatchedPhenoCovars
+from .standardizer import get_standardizer
+import enum
 import sys
+
+import pdb
 
 __copyright__ = "Eric Torstenson"
 __license__ = "GPL3.0"
@@ -23,6 +26,14 @@ __license__ = "GPL3.0"
 #     You should have received a copy of the GNU General Public License
 #     along with MVtest.  If not, see <http://www.gnu.org/licenses/>.
 
+
+class PhenoIdFormat(enum.Enum):
+    IID_FID=1       # ID is at 0 and 1 and combined
+    IID=2           # ID is at position 1
+    FID=3           # ID is at position 0
+    FID_FID=4       # This just assumes the ID is at position 0 and is repeated
+    IID_IID=5       # This assumes that the ID is at position 1 and is repeated
+
 class PhenoCovar(object):
     """Store both phenotype and covariate data in a single object.
 
@@ -30,12 +41,19 @@ class PhenoCovar(object):
     easily. Covariates do not change during iteration. Missing is updated
     according to the missing content within the phenotype (and covariates
     as well).
+
+    We are going to assume PLINK style format even for vcf or other formats
+    which aren't pedigree based, for simplicity. User can specify which column
+    to use if they are using a format like VCF which has no family:individual
+    id combination
     """
 
     #: Do we use sex as a covariate?
     sex_as_covariate = False
     #: Internal encoding for missingness
     missing_encoding = -9
+
+    id_encoding = PhenoIdFormat.IID_FID
 
     # Prime with pedigree data and the --sex == True. This will optionally add/activate the first covariate, SEX
     # Load phenotype data from file. If this happens, we'll overwrite the pedigree based data
@@ -56,7 +74,7 @@ class PhenoCovar(object):
         self.covariate_labels = []
         #: List of phenotype names from header, if provided.
         #: If no header is found, the phenotype is simply named Pheno-N
-        self.phenotype_names = ["Pheno-1"]
+        self.phenotype_names = []
         #: Allows you to turn off standardization
         self.do_standardize_variables = False
 
@@ -70,12 +88,11 @@ class PhenoCovar(object):
     def __iter__(self):
         if self.test_variables is None:
             self.prep_testvars()
-        if len(self.phenotype_data) == 0 or len(self.phenotype_data[0]) == 0:
-            raise StopIteration
-        for idx in range(0, len(self.phenotype_data)):
-            self.test_variables.idx = idx
-            yield self.test_variables
-        raise StopIteration
+        if not (len(self.phenotype_data) == 0 or len(self.phenotype_data[0]) == 0):
+            for idx in range(0, len(self.phenotype_data)):
+                self.test_variables.idx = idx
+                yield self.test_variables
+        #raise StopIteration
 
     def prep_testvars(self):
         """Make sure that the data is in the right form and standardized as
@@ -111,17 +128,43 @@ class PhenoCovar(object):
 
         self.pedigree_data[ind_id] = len(self.phenotype_data[0])
         if phenotype != None:
+            if len(self.phenotype_names) == 0:
+                self.phenotype_names = ["Pheno-1"]
             if type(self.phenotype_data) is list:
                 self.phenotype_data[0].append(phenotype)
             else:
                 self.phenotype_data[-1, len(self.individual_mask)] = phenotype
         self.individual_mask.append(0)
 
-        if PhenoCovar.sex_as_covariate:
+        if PhenoCovar.sex_as_covariate and sex is not None:
             try:
                 self.covariate_data[0].append(float(sex))
-            except Exception, e:
+            except Exception as e:
                 raise MalformedInputFile("Invalid setting, %s, for sex in pedigree" % (sex))
+        if PhenoCovar.sex_as_covariate and len(self.covariate_data[0]) != len(self.pedigree_data):
+            print("What? ", file=sys.stderr)
+            print(self.covariate_data, file=sys.stderr)
+            print(self.pedigree_data, file=sys.stderr)
+            sys.exit(1)
+
+    @classmethod
+    def set_id_format(cls, id_format):
+        cls.id_encoding = id_format
+
+
+    @classmethod
+    def build_id(cls, row):
+        if cls.id_encoding == PhenoIdFormat.IID:
+            return row[1]
+        if cls.id_encoding == PhenoIdFormat.FID:
+            return row[0]
+        if cls.id_encoding == PhenoIdFormat.IID_FID:
+            return ":".join(row[0:2])
+        if cls.id_encoding == PhenoIdFormat.IID_IID:
+            return ":".join([row[0], row[0]])
+        if cls.id_encoding == PhenoIdFormat.FID_FID:
+            return ":".join([row[1], row[1]])
+        
 
     def load_phenofile(self, file, indices=[], names=[], sample_file=False):
         """Load phenotype data from phenotype file
@@ -151,7 +194,7 @@ class PhenoCovar(object):
             if len(header) == 3:
                 if len(valid_names) + len(valid_indices) == 0:
                     valid_indices.append(1)
-            if header[0].upper() == "FID":
+            if header[0].upper() in ["FID", "ID_1"]:
                 phenotype_names = header[2:]
                 for name in valid_names:
                     try:
@@ -168,7 +211,7 @@ class PhenoCovar(object):
                         (max(valid_indices), file.name, line_number)
                     )
 
-                for i in xrange(0, len(valid_indices)):
+                for i in range(0, len(valid_indices)):
                     self.phenotype_names.append(phenotype_names[valid_indices[i]-1])
                 # Dump the second line for sample_file==True
                 if sample_file:
@@ -189,7 +232,7 @@ class PhenoCovar(object):
                     )
 
                 self.phenotype_names = []
-                for i in xrange(0, len(valid_indices)):
+                for i in range(0, len(valid_indices)):
                     self.phenotype_names.append("Pheno-%s" % (valid_indices[i]))
 
             pheno_count = len(valid_indices)
@@ -199,7 +242,8 @@ class PhenoCovar(object):
             for line in file:
                 line_number += 1
                 words   = line.split()
-                iid = ":".join(words[0:2])
+                #pdb.set_trace()
+                iid = self.build_id(words)
 
                 # Indexes are 1 based...silly humans
                 if len(valid_indices) > 0 and max(valid_indices) > (len(words)-2):
@@ -210,6 +254,7 @@ class PhenoCovar(object):
 
 
                 pidx = 0
+                #pdb.set_trace()
                 for idx in valid_indices:
                     try:
                         pheno = float(words[1+idx])
@@ -224,6 +269,7 @@ class PhenoCovar(object):
                             "The line in question looks like this: \n--> %s") %
                             (file.name, line_number, line.strip())
                         )
+        #pdb.set_trace()
         if self.phenotype_data.shape[1] == len(ignored_data):
             raise NoMatchedPhenoCovars("No matching individuals were found in the phenotype file")
 
@@ -259,7 +305,7 @@ class PhenoCovar(object):
                 if len(var_names) + len(var_indices) == 0:
                     var_indices.append(2)
 
-            if header[0].upper() == "FID":
+            if header[0].upper() in ["FID", "ID_1"]:
                 for name in var_names:
                     if name.strip() != "":
                         try:
@@ -284,7 +330,7 @@ class PhenoCovar(object):
                 if len(var_indices) > 0 and max(var_indices) > (len(header)):
                     raise InvalidSelection("The index, %s, is larger than the number of entries in the file, %s:%s" % (max(var_indices), file.name, line_number))
 
-                for i in xrange(0, len(var_indices)):
+                for i in range(0, len(var_indices)):
                     self.covariate_labels.append("Cov-%s" % (var_indices[i]-1))
 
             covar_data = numpy.empty((len(var_indices)+len(self.covariate_data), len(self.pedigree_data)))
@@ -298,7 +344,7 @@ class PhenoCovar(object):
             for line in file:
                 line_number += 1
                 words   = line.split()
-                iid = ":".join(words[0:2])
+                iid = self.build_id(words)
 
                 # Indexes are 1 based...silly humans
                 if len(var_indices) > 0 and max(var_indices) > (len(words)):

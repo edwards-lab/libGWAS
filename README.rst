@@ -1,17 +1,18 @@
-libGWAS - A GWAS Parser Library for Python
-==========================================
+MVtest GWAS Analysis
+====================
 
-libGWAS is a set of python classes and functions that can be used to 
-facilitate the development of GWAS analysis programs. The library supports
-many of the common file formats and offers a single interface for using 
-each of them. Instructions for installation can be found below.
+MVtest is an analysis tool that can be run on many common file formats using
+syntax similar to programs you've probably already used. Instructions for
+installation can be found below.
 
 Installation
 ============
-libGWAS requires python 2.7.x as well as the following libraries:
+libGWAS requires python 3.7.x as well as the following libraries:
 
-* NumPy (version 1.7.2 or later)   www.numpy.org
-* SciPY (version 0.13.2 or later)  www.scipy.org
+* NumPy (version 1.16.2 or later)           www.numpy.org
+* SciPY (version 1.3.0 or later)            www.scipy.org
+* pytabix (version 0.1 or later)            https://pypi.org/project/pytabix/
+* bgen-reader (version 3.0.6 or later)      https://pypi.org/project/bgen-reader/
 
 libGWAS's installation will attempt to install these required components
 for you, however, it requires that you have write permission to the
@@ -52,18 +53,24 @@ $ `python setup.py install`
 
 If no errors are reported, it should be installed and ready to use.
 
-**Regarding PYTHON 3** I began the process of updating the code to work with
-both python versions 2 and 3, however, there are some real issues with some
-library support of version 3 that is discouraging. So, until those have been
-resolved, I have no plans to invest further time toward support for python 3.
+**Regarding PYTHON 2** I have completely switched over to python 3 without 
+trying to remain compatible with Python 2 because the bgen_reader no longer
+supports 2 and the end of life is only a few months from my writing this. 
+
+As such, if you wish to use python2, you will need to install an older version.
 
 System Requirements
 +++++++++++++++++++
-Because libGWAS is simply a set of classes and functions, it has no specific
-system requirements. However, developers using the library should be aware of
-the fact that some parsers, such as the pedigree_parser will require that the
-entire dataset be loaded into memory, regardless of the filters that are in 
-play (i.e. positional filters, such as --from-kb and --to-kb). 
+Aside from the library dependencies, libGWAS's requirements depend largely on
+the number of SNPs and individuals being analyzed as well as the data format
+being used. In general, GWAS sized datasets will require several gigabytes of
+memory when using the traditional pedigree format, however, even 10s of
+thousands of subjects can be analyzed with less than 1 gigabyte of RAM when
+the data is formatted as transposed pedigree or PLINK's default bed format.
+
+Otherwise, it is recommended that the system be run on a unix-like system
+such as Linux or OS X, but it should work under windows as well (we can't
+offer support for running libGWAS under windows).
 
 Running Unit Tests
 ++++++++++++++++++
@@ -73,7 +80,7 @@ directory of the extracted archive's contents:
 
 $ `python setup.py test`
 
-If no errors are reported, then libGWAS should run correctly on your system.
+If no errors are reported, then mvtest should run correctly on your system.
 
 .. _virtual-env:
 
@@ -127,15 +134,16 @@ Once those changes have taken effect, install setuptools and scipy:
 $ `conda install pip scipy`
 
 Installing SciPy will also force the installation of NumPy, which is
-also required for running libGWAS. (setuptools includes easy_install).
+also required for running mvtest. (setuptools includes easy_install).
 
 Once that has been completed successfully, you should be ready to follow
-the standard instructions for installing libGWAS.
+the standard instructions for installing mvtest.
 
-libGWAS Online Manual
+
+MVtest Online Manual
 ====================
 
-The online manual can be found at http://edwards-lab.github.io/libGWAS/
+The online manual can be found at http://edwards-lab.github.io/MVtest/
 
 For developers who would like to use the GWAS parsers, the API manual can be
-found at http://edwards-lab.github.io/libGWAS/api/index.html
+found at http://edwards-lab.github.io/MVtest/api/index.html

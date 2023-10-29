@@ -17,11 +17,15 @@ from libgwas.data_parser import DataParser
 from libgwas.pheno_covar import PhenoCovar
 from libgwas import impute_parser
 from libgwas.boundary import BoundaryCheck
-
+from libgwas.exceptions import InvalidFrequency
+from libgwas.exceptions import TooMuchMissing
+from libgwas.exceptions import TooMuchMissingpPhenoCovar
+from libgwas.tests import remove_file
 
 import gzip
 
 base_freq = [0.99, 0.75, 0.7,0.8, 0.65, 0.7, 0.85, 0.7, 0.7, 0.3]
+
 
 
 class TestBase(unittest.TestCase):
@@ -55,14 +59,17 @@ class TestBase(unittest.TestCase):
         self.parser_info_thresh = impute_parser.Parser.info_threshold
         impute_parser.Parser.info_threshold = 0.0
 
+        self.ind_exclusions = DataParser.ind_exclusions
+
+
     def tearDown(self):
-        os.remove(self.fam_file)
-        os.remove(self.gen_file)
-        os.remove(self.gen_file2)
-        os.remove(self.uncmp_1)
-        os.remove(self.uncmp_2)
-        os.remove(self.info_file1)
-        os.remove(self.info_file2)
+        remove_file(self.fam_file)
+        remove_file(self.gen_file)
+        remove_file(self.gen_file2)
+        remove_file(self.uncmp_1)
+        remove_file(self.uncmp_2)
+        remove_file(self.info_file1)
+        remove_file(self.info_file2)
 
         impute_parser.Parser.gen_ext = self.gen_ext
         BoundaryCheck.chrom  = self.chrom
@@ -81,12 +88,13 @@ class TestBase(unittest.TestCase):
         impute_parser.encoding = self.encoding
         DataParser.compressed_pedigree = self.compression
         impute_parser.Parser.info_threshold = self.parser_info_thresh
+        DataParser.ind_exclusions = self.ind_exclusions
 
     def WriteTestFiles(self, prefix = "__test_imputed"):
 
         self.fam_file = "%s.gen_samples" % (prefix)
         fam_file = open(self.fam_file, 'w')
-        print >> fam_file, """ID_1 ID_2 missing father mother sex plink_pheno
+        print("""ID_1 ID_2 missing father mother sex plink_pheno
     0 0 0 D D D B
     ID0001 FAM001 0 0 0 1 0.1
     ID0002 FAM002 0 0 0 2 0.4
@@ -99,7 +107,7 @@ class TestBase(unittest.TestCase):
     ID0009 FAM009 0 0 0 2 1.0
     ID0010 FAM010 0 0 0 2 0.5
     ID0011 FAM011 0 0 0 2 0.9
-    ID0012 FAM012 0 0 0 1 1.0"""
+    ID0012 FAM012 0 0 0 1 1.0""", file=fam_file)
         fam_file.close()
         self.ind_ids = ["ID0001:FAM001",
                         "ID0002:FAM002",
@@ -120,7 +128,7 @@ class TestBase(unittest.TestCase):
         self.info_file2 = "%s-2.info" % (prefix)
         self.uncmp_1 = "%s.gen" % (prefix)
         self.uncmp_2 = "%s-2.gen" % (prefix)
-        gen_file = gzip.open(self.gen_file, 'wb')
+        gen_file = gzip.open(self.gen_file, 'wt')
         uncmp_file = open(self.uncmp_1, 'w')
         idx = 0
         self.additive_encoding = numpy.zeros((20, 12))
@@ -135,7 +143,7 @@ class TestBase(unittest.TestCase):
         certainty = [0.2 * (x%5) + 0.05 for x in range(0, 20)]
 
         info_file = open(self.info_file1, 'w')
-        print >> info_file, "snp_id rs_id position exp_freq_a1 info certainty type info_type0 concord_type0 r2_type0"
+        print("snp_id rs_id position exp_freq_a1 info certainty type info_type0 concord_type0 r2_type0", file=info_file)
 
         for base in base_freq:
             f = numpy.random.normal(loc=base, scale=0.1, size=12)
@@ -154,23 +162,23 @@ class TestBase(unittest.TestCase):
             line = numpy.hstack((AA.reshape(-1, 1), Aa.reshape(-1, 1), aa.reshape(-1, 1)))
             self.positions.append((10+idx) * 1397)
             self.rsids.append("rs132%d" % (idx * 67))
-            print >> gen_file, "\t".join([
+            print("\t".join([
                                             "--",
                                             self.rsids[-1],
                                             str(self.positions[-1]),
                                             self.allele_1[idx],
                                             self.allele_2[idx]]) + \
                                "\t" + \
-                               "\t".join(["%0.6f" % (x) for x in line.reshape(-1)])
-            print >> uncmp_file, "\t".join([
+                               "\t".join(["%0.10f" % (x) for x in line.reshape(-1)]), file=gen_file)
+            print("\t".join([
                                             "--",
                                             self.rsids[-1],
                                             str(self.positions[-1]),
                                             self.allele_1[idx],
                                             self.allele_2[idx]]) + \
                                "\t" + \
-                               "\t".join(["%0.6f" % (x) for x in line.reshape(-1)])
-            print >> info_file, " ".join([
+                               "\t".join(["%0.10f" % (x) for x in line.reshape(-1)]), file=uncmp_file)
+            print(" ".join([
                                             "--",
                                             self.rsids[-1],
                                             str(self.positions[-1]),
@@ -180,17 +188,17 @@ class TestBase(unittest.TestCase):
                                             "0",
                                             "-1",
                                             "-1",
-                                            "-1"])
+                                            "-1"]), file=info_file)
 
 
             idx += 1
         gen_file.close()
         uncmp_file.close()
         info_file.close()
-        gen_file = gzip.open(self.gen_file2, 'wb')
+        gen_file = gzip.open(self.gen_file2, 'wt')
         uncmp_file = open(self.uncmp_2, 'w')
         info_file = open(self.info_file2, 'w')
-        print >> info_file, "snp_id rs_id position exp_freq_a1 info certainty type info_type0 concord_type0 r2_type0"
+        print("snp_id rs_id position exp_freq_a1 info certainty type info_type0 concord_type0 r2_type0", file=info_file)
         for base in base_freq:
             f = numpy.random.normal(loc=base, scale=0.1, size=12)
             f[f>1.0] = 1.0
@@ -207,23 +215,23 @@ class TestBase(unittest.TestCase):
             line = numpy.hstack((AA.reshape(-1, 1), Aa.reshape(-1, 1), aa.reshape(-1, 1)))
             self.positions.append((10+idx) * 1397)
             self.rsids.append("rs132%d" % (idx * 67))
-            print >> gen_file, "\t".join([
+            print("\t".join([
                                             "--",
                                             self.rsids[-1],
                                             str(self.positions[-1]),
                                             self.allele_1[idx],
                                             self.allele_2[idx]]) + \
                                "\t" + \
-                               "\t".join(["%0.4f" % (x) for x in line.reshape(-1)])
-            print >> uncmp_file, "\t".join([
+                               "\t".join(["%0.10f" % (x) for x in line.reshape(-1)]), file=gen_file)
+            print("\t".join([
                                             "--",
                                             self.rsids[-1],
                                             str(self.positions[-1]),
                                             self.allele_1[idx],
                                             self.allele_2[idx]]) + \
                                "\t" + \
-                               "\t".join(["%0.4f" % (x) for x in line.reshape(-1)])
-            print >> info_file, " ".join([
+                               "\t".join(["%0.10f" % (x) for x in line.reshape(-1)]), file=uncmp_file)
+            print(" ".join([
                                             "--",
                                             self.rsids[-1],
                                             str(self.positions[-1]),
@@ -233,9 +241,11 @@ class TestBase(unittest.TestCase):
                                             "0",
                                             "-1",
                                             "-1",
-                                            "-1"])
+                                            "-1"]), file=info_file)
             idx += 1
         self.impute_parser = impute_parser.Parser(self.fam_file, [self.gen_file], chroms = ["3"])
+        uncmp_file.close()
+        info_file.close()
 
 class TestImputedBasics(TestBase):
     def testFamilyData(self):
@@ -305,9 +315,19 @@ class TestImputedBasics(TestBase):
         idx = 0
 
         for snp in parser:
-            self.assertEqual(self.positions[idx], snp.pos)
-            for i in range(0, len(self.additive_encoding[idx])):
-                self.assertAlmostEqual(self.additive_encoding[idx][i], snp.genotype_data[i], places=3)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    for i in range(0, len(self.additive_encoding[idx])):
+                        self.assertAlmostEqual(self.additive_encoding[idx][i], genodata.genotypes[i], places=3)
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
+
             idx += 1
         self.assertEqual(20, idx)
 
@@ -343,9 +363,17 @@ class TestImputedBasics(TestBase):
         idx = 0
 
         for snp in parser:
-            self.assertEqual(self.positions[idx], snp.pos)
-            for i in range(0, len(self.additive_encoding[idx])):
-                self.assertAlmostEqual(self.additive_encoding[idx][i], snp.genotype_data[i], places=3)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    for i in range(0, len(self.additive_encoding[idx])):
+                        self.assertAlmostEqual(self.additive_encoding[idx][i], genodata.genotypes[i], places=3)
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
             idx += 1
         self.assertEqual(20, idx)
 
@@ -361,9 +389,17 @@ class TestImputedBasics(TestBase):
         idx = 4
 
         for snp in parser:
-            self.assertEqual(self.positions[idx], snp.pos)
-            for i in range(0, len(self.additive_encoding[idx])):
-                self.assertAlmostEqual(self.additive_encoding[idx][i], snp.genotype_data[i], places=3)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    for i in range(0, len(self.additive_encoding[idx])):
+                        self.assertAlmostEqual(self.additive_encoding[idx][i], genodata.genotypes[i], places=3)
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
             idx += 1
         self.assertEqual(10, idx)
 
@@ -378,9 +414,17 @@ class TestImputedBasics(TestBase):
         idx = 0
 
         for snp in parser:
-            self.assertEqual(self.positions[idx], snp.pos)
-            for i in range(0, len(self.dominant_encoding[idx])):
-                self.assertAlmostEqual(self.dominant_encoding[idx][i], snp.genotype_data[i], places=3)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    for i in range(0, len(self.dominant_encoding[idx])):
+                        self.assertAlmostEqual(self.dominant_encoding[idx][i], genodata.genotypes[i], places=3)
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
             idx += 1
         self.assertEqual(20, idx)
 
@@ -397,9 +441,18 @@ class TestImputedBasics(TestBase):
         idx = 0
 
         for snp in parser:
-            self.assertEqual(self.positions[idx], snp.pos)
-            for i in range(0, len(self.dominant_encoding[idx])):
-                self.assertAlmostEqual(self.dominant_encoding[idx][i], snp.genotype_data[i], places=3)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    for i in range(0, len(self.dominant_encoding[idx])):
+                        self.assertAlmostEqual(self.dominant_encoding[idx][i], genodata.genotypes[i], places=3)
+
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
             idx += 1
         self.assertEqual(20, idx)
 
@@ -414,9 +467,94 @@ class TestImputedBasics(TestBase):
         idx = 0
 
         for snp in parser:
-            self.assertEqual(self.positions[idx], snp.pos)
-            for i in range(0, len(self.recessive_encoding[idx])):
-                self.assertAlmostEqual(self.recessive_encoding[idx][i], snp.genotype_data[i], places=3)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    for i in range(0, len(self.recessive_encoding[idx])):
+                        self.assertAlmostEqual(self.recessive_encoding[idx][i], genodata.genotypes[i], places=3)
+
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
+            idx += 1
+        self.assertEqual(20, idx)
+
+    def testDroppedFromPheno(self):
+        impute_parser.encoding = impute_parser.Encoding.Genotype
+        PhenoCovar.sex_as_covariate = True
+        pc = PhenoCovar()
+        parser = impute_parser.Parser(self.fam_file, [self.gen_file, self.gen_file2], chroms = ["3", "4"])
+        parser.load_family_details(pc)
+        parser.load_genotypes()
+
+        idx = 0
+        flippers = {0:2, 1:1, 2:0}
+
+        for snp in parser:
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                # Let's fake a couple of missing data in phenotype
+                nonmissing[0] = False
+                nonmissing[1] = False
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    flip = self.mafs[idx] > 0.5
+                    for i in range(2, len(self.raw[idx])):
+                        genotype = 2
+                        AA, Aa, aa = self.raw[idx][i]
+                        if Aa >= AA and Aa >= aa:
+                            genotype = 1
+                        elif AA >= Aa and AA >= aa:
+                            genotype = 0
+                        if flip:
+                            genotype = flippers[genotype]
+                        self.assertAlmostEqual(genotype, genodata.genotypes[i-2], places=3)
+
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
+            idx += 1
+        self.assertEqual(20, idx)
+
+    def testDroppedIndividuals(self):
+        DataParser.ind_exclusions = ["ID0001:FAM001", "ID0002:FAM002"]
+        impute_parser.encoding = impute_parser.Encoding.Genotype
+        PhenoCovar.sex_as_covariate = True
+        pc = PhenoCovar()
+        parser = impute_parser.Parser(self.fam_file, [self.gen_file, self.gen_file2], chroms = ["3", "4"])
+        parser.load_family_details(pc)
+        parser.load_genotypes()
+
+        idx = 0
+        flippers = {0:2, 1:1, 2:0}
+
+        for snp in parser:
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    flip = self.mafs[idx] > 0.5
+                    for i in range(2, len(self.raw[idx])):
+                        genotype = 2
+                        AA, Aa, aa = self.raw[idx][i]
+                        if Aa >= AA and Aa >= aa:
+                            genotype = 1
+                        elif AA >= Aa and AA >= aa:
+                            genotype = 0
+                        if flip:
+                            genotype = flippers[genotype]
+                        self.assertAlmostEqual(genotype, genodata.genotypes[i-2], places=3)
+
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
             idx += 1
         self.assertEqual(20, idx)
 
@@ -429,17 +567,30 @@ class TestImputedBasics(TestBase):
         parser.load_genotypes()
 
         idx = 0
+        flippers = {0:2, 1:1, 2:0}
 
         for snp in parser:
-            self.assertEqual(self.positions[idx], snp.pos)
-            for i in range(0, len(self.raw[idx])):
-                genotype = 2
-                AA, Aa, aa = self.raw[idx][i]
-                if Aa >= AA and Aa >= aa:
-                    genotype = 1
-                elif AA >= Aa and AA >= aa:
-                    genotype = 0
-                self.assertAlmostEqual(genotype, snp.genotype_data[i], places=3)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    flip = self.mafs[idx] > 0.5
+                    for i in range(0, len(self.raw[idx])):
+                        genotype = 2
+                        AA, Aa, aa = self.raw[idx][i]
+                        if Aa >= AA and Aa >= aa:
+                            genotype = 1
+                        elif AA >= Aa and AA >= aa:
+                            genotype = 0
+                        if flip:
+                            genotype = flippers[genotype]
+                        self.assertAlmostEqual(genotype, genodata.genotypes[i], places=3)
+
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
             idx += 1
         self.assertEqual(20, idx)
 
@@ -450,13 +601,20 @@ class TestImputedBasics(TestBase):
         parser.load_genotypes()
 
         idx = 0
-
         for snp in parser:
-            self.assertEqual(self.positions[idx], snp.pos)
-            maf = numpy.mean(self.mafs[idx])
-            if maf > 0.5:
-                maf = 1.0 - maf
-            self.assertAlmostEqual(maf, snp.maf, places=3)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    maf = numpy.mean(self.mafs[idx])
+                    if maf > 0.5:
+                        maf = 1.0 - maf
+                    self.assertAlmostEqual(maf, genodata.maf, places=3)
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
+
             idx += 1
         self.assertEqual(10, idx)
 
@@ -469,10 +627,29 @@ class TestImputedBasics(TestBase):
         idx = 0
 
         for snp in parser:
-            self.assertEqual(self.positions[idx], snp.pos)
-            self.assertEqual(snp.major_allele, self.allele_1[idx])
-            self.assertEqual(snp.minor_allele, self.allele_2[idx])
-            self.assertEqual(snp.rsid, self.rsids[idx])
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+
+                    min_al = self.allele_2[idx]
+                    maj_al = self.allele_1[idx]
+
+                    if self.mafs[idx] > 0.5:
+                        maj_al = min_al
+                        min_al = self.allele_1[idx]
+
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    self.assertEqual(genodata.alleles[0], self.allele_1[idx])
+                    self.assertEqual(genodata.alleles[1], self.allele_2[idx])
+                    self.assertEqual(genodata.major_allele, maj_al)
+                    self.assertEqual(genodata.minor_allele, min_al)
+                    self.assertEqual(snp.rsid, self.rsids[idx])
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
+
             idx += 1
         self.assertEqual(10, idx)
 
@@ -490,9 +667,18 @@ class TestImputedBasics(TestBase):
         positions = self.positions * 3
 
         for snp in parser:
-            self.assertEqual(positions[idx], snp.pos)
-            for i in range(0, len(values[idx])):
-                self.assertAlmostEqual(values[idx][i], snp.genotype_data[i], places=3)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(positions[idx], snp.pos)
+                    for i in range(0, len(values[idx])):
+                        self.assertAlmostEqual(values[idx][i], genodata.genotypes[i], places=3)
+
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
             idx += 1
         self.assertEqual(60, idx)
 
@@ -508,9 +694,17 @@ class TestImputedBasics(TestBase):
         idx = 0
 
         for snp in parser:
-            self.assertEqual(self.positions[idx], snp.pos)
-            for i in range(2, len(self.recessive_encoding[idx])):
-                self.assertAlmostEqual(self.recessive_encoding[idx][i], snp.genotype_data[i-2], places=3)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    for i in range(2, len(self.recessive_encoding[idx])):
+                        self.assertAlmostEqual(self.recessive_encoding[idx][i], genodata.genotypes[i-2], places=3)
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
             idx += 1
         self.assertEqual(20, idx)
 
@@ -527,9 +721,18 @@ class TestImputedBasics(TestBase):
         idx = 0
 
         for snp in parser:
-            self.assertEqual(self.positions[idx], snp.pos)
-            for i in range(0, len(self.recessive_encoding[idx])):
-                self.assertAlmostEqual(self.recessive_encoding[idx][i], snp.genotype_data[i], places=3)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    for i in range(0, len(self.recessive_encoding[idx])):
+                        self.assertAlmostEqual(self.recessive_encoding[idx][i], genodata.genotypes[i], places=3)
+
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
             idx += 1
         self.assertEqual(5, idx)
 
@@ -546,9 +749,19 @@ class TestImputedBasics(TestBase):
         idx = 6
 
         for snp in parser:
-            self.assertEqual(self.positions[idx], snp.pos)
-            for i in range(0, len(self.recessive_encoding[idx])):
-                self.assertAlmostEqual(self.recessive_encoding[idx][i], snp.genotype_data[i], places=3)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    for i in range(0, len(self.recessive_encoding[idx])):
+                        self.assertAlmostEqual(self.recessive_encoding[idx][i], genodata.genotypes[i], places=3)
+
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
+
             idx += 1
 
     def testBoundariedMiddle(self):
@@ -564,12 +777,22 @@ class TestImputedBasics(TestBase):
         idx = 0
         dropped = 0
         for snp in parser:
-            while self.positions[idx] < 30734 or self.positions[idx] > 33528:
-                idx += 1
-                dropped += 1
-            self.assertEqual(self.positions[idx], snp.pos)
-            for i in range(0, len(self.recessive_encoding[idx])):
-                self.assertAlmostEqual(self.recessive_encoding[idx][i], snp.genotype_data[i], places=3)
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    while self.positions[idx] < 30734 or self.positions[idx] > 33528:
+                        idx += 1
+                        dropped += 1
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    for i in range(0, len(self.recessive_encoding[idx])):
+                        self.assertAlmostEqual(self.recessive_encoding[idx][i], genodata.genotypes[i], places=3)
+
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
+
             idx += 1
         self.assertEqual(12, dropped)
 
@@ -583,12 +806,21 @@ class TestImputedBasics(TestBase):
 
         idx = 0
         for snp in parser:
-            while numpy.mean(self.mafs[idx]) < DataParser.min_maf:
-                idx += 1
-            self.assertEqual(self.positions[idx], snp.pos)
-            self.assertEqual(snp.major_allele, self.allele_1[idx])
-            self.assertEqual(snp.minor_allele, self.allele_2[idx])
-            self.assertEqual(snp.rsid, self.rsids[idx])
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    while numpy.mean(self.mafs[idx]) < DataParser.min_maf:
+                        idx += 1
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    self.assertEqual(genodata.major_allele, self.allele_1[idx])
+                    self.assertEqual(genodata.minor_allele, self.allele_2[idx])
+                    self.assertEqual(snp.rsid, self.rsids[idx])
+
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
             idx += 1
 
     def testFilterSNP(self):
@@ -602,13 +834,23 @@ class TestImputedBasics(TestBase):
         idx = 0
         dropped = 0
         for snp in parser:
-            while self.rsids[idx] in DataParser.boundary.ignored_rs:
-                dropped += 1
-                idx += 1
-            self.assertEqual(self.positions[idx], snp.pos)
-            self.assertEqual(snp.major_allele, self.allele_1[idx])
-            self.assertEqual(snp.minor_allele, self.allele_2[idx])
-            self.assertEqual(snp.rsid, self.rsids[idx])
+            for y in pc:
+                (pheno, covars, nonmissing) = y.get_variables(snp.missing_genotypes)
+                try:
+                    genodata = snp.get_genotype_data(nonmissing)
+                    while self.rsids[idx] in DataParser.boundary.ignored_rs:
+                        dropped += 1
+                        idx += 1
+
+                    self.assertEqual(self.positions[idx], snp.pos)
+                    self.assertEqual(genodata.alleles[0], self.allele_1[idx])
+                    self.assertEqual(genodata.alleles[1], self.allele_2[idx])
+                    self.assertEqual(snp.rsid, self.rsids[idx])
+
+                except TooMuchMissing as e:
+                    pass
+                except InvalidFrequency as e:
+                    pass
             idx += 1
         self.assertEqual(2, dropped)
 

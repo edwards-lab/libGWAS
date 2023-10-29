@@ -1,9 +1,11 @@
 Installation
 ============
-libGWAS requires python 2.7.x as well as the following libraries:
+libGWAS requires python 3.7.x as well as the following libraries:
 
-* NumPy (version 1.7.2 or later)   www.numpy.org
-* SciPY (version 0.13.2 or later)  www.scipy.org
+* NumPy (version 1.16.2 or later)           www.numpy.org
+* SciPY (version 1.3.0 or later)            www.scipy.org
+* pytabix (version 0.1 or later)            https://pypi.org/project/pytabix/
+* bgen-reader (version 3.0.6 or later)      https://pypi.org/project/bgen-reader/
 
 libGWAS's installation will attempt to install these required components
 for you, however, it requires that you have write permission to the
@@ -44,10 +46,11 @@ $ `python setup.py install`
 
 If no errors are reported, it should be installed and ready to use.
 
-**Regarding PYTHON 3** I began the process of updating the code to work with
-both python versions 2 and 3, however, there are some real issues with some
-library support of version 3 that is discouraging. So, until those have been
-resolved, I have no plans to invest further time toward support for python 3.
+**Regarding PYTHON 2** I have completely switched over to python 3 without 
+trying to remain compatible with Python 2 because the bgen_reader no longer
+supports 2 and the end of life is only a few months from my writing this. 
+
+As such, if you wish to use python2, you will need to install an older version.
 
 System Requirements
 +++++++++++++++++++

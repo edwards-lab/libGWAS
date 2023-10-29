@@ -2,4 +2,4 @@ include doc/libGWAS-API.pdf
 include README.md
 include CHANGES
 include ez_setup.py
-include tests/libgwas/bedfiles/*
+include libgwas/tests/bedfiles/*

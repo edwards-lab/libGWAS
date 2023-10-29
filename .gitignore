@@ -1,8 +1,10 @@
+sync
 *.pyc
 .git
 .DS_Store
 .idea
 *.egg
+*.eggs
 *.zip
 *.egg-info
 *_build
@@ -12,3 +14,5 @@ changelog.header
 index.supp
 # test files
 scratch
+# Ultraedit files
+*.bak
