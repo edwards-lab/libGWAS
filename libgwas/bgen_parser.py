@@ -108,10 +108,15 @@ class Parser(DataParser):
         """
         libgwas.timer.report_period("Loading Family Details")
 
-        # EST TODO: I need to make sure this is correct for the different types
-        # of input. This worked for Joes data and the test data, but it 
-        # probably isn't right. 
-        self.sample_ids = [f"{x}:{x}" for x in list(self.bgen.samples)]
+        # EST TODO: 2023-10-29 
+        #
+        # For now, since our builder function depends on the actual data row, 
+        # we'll fake it...This REALLY needs to be corrected. But solving this 
+        # is going to take some serious reworking
+        # 
+        self.sample_ids = list(self.bgen.samples)
+        if PhenoCovar.id_encoding in [PhenoCovar.IID_FID, PhenoCovar.FID_FID, PhenoCovar.IID_IID]:
+            self.sample_ids = [f"{x}:{x}" for x in list(self.bgen.samples)]
 
         artificial_ids = False
         if self.sample_ids[0] == "sample_0":
