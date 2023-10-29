@@ -117,8 +117,6 @@ class Parser(DataParser):
         if self.sample_ids[0] == "sample_0":
             artificial_ids = True
 
-        #print(self.ind_exclusions)
-        #print(self.sample_ids[0:10])
         mask_components = [0 for x in self.sample_ids]  # 1s indicate an individual is to be masked out
         # Sample file is only necessary if the user chose not to include them
         # in the bgen file. bgen_reader will generate it's own ids if they
@@ -126,6 +124,11 @@ class Parser(DataParser):
         if self.sample_filename is not None:
             with open(self.sample_filename) as file:
                 header = file.readline()
+
+                # EST 2023-10-19 - This really should be something that 
+                # the user sets via the command line application, but 
+                # this should work as long as the docs for tool I'm using
+                # is correct about the standard. 
                 id2_exists = ("ID_2" in header or "FID" in header)
                 if id2_exists:
                     PhenoCovar.set_id_format(PhenoIdFormat.IID_FID)
