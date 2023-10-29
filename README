@@ -57,30 +57,10 @@ Miniconda or virtual-env below for instructions on different options
 for setting up your own python environement which will exist entirely
 under your own control.
 
-Installation can be done in two ways:
-
-
-Install with PIP
-================
-
-To install using python’s package manager, pip, simply use the
-following command:
-
-$ *pip install libGWAS*
-
-If you have proper permission to install packages, this will attempt
-to download and install all dependencies along with libGWAS itself.
-
-
-Manual Installation
+Installation
 ===================
 
-For users who do not use pip or wish to run the bundled tests as well
-as have a local copy of the manuals, manual installation is almost as
-easy.
-
-For users with Git installed, you can simply clone the sources using
-the following command:
+To install libGWAS, simply clone the sources using the following command:
 
 $ *git clone https://github.com/edwards-lab/libGWAS*
 
