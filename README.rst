@@ -33,7 +33,7 @@ Or you may visit the website and download the tarball directly from github: http
 Once you have downloaded the software, simply extract the contents and run the
 following command to install it:
 
-$ `python setup.py install`
+$ `pip install .`
 
 If no errors are reported, it should be installed and ready to use.
 

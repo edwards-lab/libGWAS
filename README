@@ -70,7 +70,7 @@ github: https://github.com/edwards-lab/libGWAS
 Once you have downloaded the software, simply extract the contents and
 run the following command to install it:
 
-$ *python setup.py install*
+$ *pip install .*
 
 If no errors are reported, it should be installed and ready to use.
 
