@@ -106,11 +106,33 @@ libGWAS comes with a unit test suite which can be run prior to
 installation. To run the tests, simply run the following command from
 within the root directory of the extracted archive’s contents:
 
-$ *python setup.py test*
+$ *pytest*
 
 If no errors are reported, then mvtest should run correctly on your
 system.
 
+For example:
+```
+$ pytest
+================================================================ test session starts =================================================================
+platform linux -- Python 3.9.12, pytest-7.4.0, pluggy-1.2.0
+rootdir: /mnt/d/common/dev/mvtest/ACCRE/mvtest-sim/libGWAS
+collected 185 items
+
+libgwas/tests/bed_parser_test.py ...............                                                                                               [  8%]
+libgwas/tests/test_bgen_parser.py ...                                                                                                          [  9%]
+libgwas/tests/test_boundary.py ...............                                                                                                 [ 17%]
+libgwas/tests/test_impute_parser.py ......................                                                                                     [ 29%]
+libgwas/tests/test_libbasics.py ..                                                                                                             [ 30%]
+libgwas/tests/test_locus.py ....                                                                                                               [ 32%]
+libgwas/tests/test_mach_parser.py ...............                                                                                              [ 41%]
+libgwas/tests/test_pedigree_parser.py ...................................                                                                      [ 60%]
+libgwas/tests/test_phenocovar.py .................................                                                                             [ 77%]
+libgwas/tests/test_transped_parser.py ...........................                                                                              [ 92%]
+libgwas/tests/test_vcf_parser.py ..............                                                                                                [100%]
+
+================================================================ 185 passed in 12.58s ================================================================
+```
 
 Virtual Env
 ===========
