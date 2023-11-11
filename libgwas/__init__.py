@@ -1,6 +1,4 @@
-
-__author__ = 'Eric Torstenson'
-__version__ = '1.5.0'
+__author__ = "Eric Torstenson"
 
 import subprocess
 import sys
@@ -50,77 +48,83 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
+
+
 class Timer:
     def __init__(self, fn=None):
         self.start = datetime.datetime.now()
         self.last_period = self.start
         self.log = stderr
         if fn is not None:
-            self.log = open(fn, 'w')
-    
+            self.log = open(fn, "w")
+
     def __del__(self):
         self.close()
-        
+
     def open(self, fn, msg):
         lp = self.last_period
         self.report_period(msg)
         self.last_period = lp
         if self.log != stderr:
             self.log.close()
-        self.log = open(fn, 'w')
+        self.log = open(fn, "w")
         self.report_period(msg)
 
     def diff(self):
         tdiff = datetime.datetime.now() - self.start
-        seconds = tdiff.seconds + (int(tdiff.microseconds / 10000) * 0.01 )
+        seconds = tdiff.seconds + (int(tdiff.microseconds / 10000) * 0.01)
         value = "%0.2fs" % (seconds)
         if seconds > 120:
-            value = "%d:%0.2f" % (math.floor(seconds/60), seconds%60)
+            value = "%d:%0.2f" % (math.floor(seconds / 60), seconds % 60)
         return value
-        
+
     def period(self):
         now = datetime.datetime.now()
         tdiff = now - self.last_period
-        seconds = tdiff.seconds + (int(tdiff.microseconds / 10000) * 0.01 )
+        seconds = tdiff.seconds + (int(tdiff.microseconds / 10000) * 0.01)
         value = "%0.2fs (%s)" % (seconds, self.diff())
         if seconds > 120:
-            value = "%d:%0.2f (%s)" % (math.floor(seconds/60), seconds%60, self.diff())
+            value = "%d:%0.2f (%s)" % (
+                math.floor(seconds / 60),
+                seconds % 60,
+                self.diff(),
+            )
         self.last_period = now
         return value
 
     def report_period(self, msg):
         print("%s %s" % (msg, self.period()), file=self.log)
         self.log.flush()
-        
+
     def report_total(self, msg):
         print("%s %s" % (msg, self.diff()), file=self.log)
         self.log.flush()
-        
+
     def close(self):
         if self.log != stderr:
             self.log.close()
 
+
 timer = Timer()
 
+
 def close_file(f):
-    '''Windows...I imagine this requires some other changes, but until
-    the rest of this is working, this will eliminate the stupid failures'''
-    
+    """Windows...I imagine this requires some other changes, but until
+    the rest of this is working, this will eliminate the stupid failures"""
+
     if f is not None:
         try:
             f.close()
         except:
             pass
 
+
 class GenotypeData(object):
     """Simple data structure to help build vectors of genotypes and then determine
-       which allele is minor/major, effect, etc. """
-    conversion = {
-        "0/0": 0,
-        "0/1": 1,
-        "1/0": 1,
-        "1/1": 2
-    }
+    which allele is minor/major, effect, etc."""
+
+    conversion = {"0/0": 0, "0/1": 1, "1/0": 1, "1/1": 2}
+
     def __init__(self):
         self.genotypes = []
         self.ref_counts = 0
@@ -131,7 +135,7 @@ class GenotypeData(object):
     def append(self, gt):
         gt = GenotypeData.conversion[gt]
         if gt >= 0:
-            self.ref_counts += 2-gt
+            self.ref_counts += 2 - gt
             self.alt_counts += gt
             if gt == 1:
                 self.het_counts += 1
@@ -154,7 +158,13 @@ class GenotypeData(object):
         return numpy.array(self.genotypes)
 
     def __str__(self):
-        return "%d\t%d\t%d\t%s" % (self.ref_counts, self.alt_counts, self.het_counts, " ".join([str(x) for x in self.genotypes]))
+        return "%d\t%d\t%d\t%s" % (
+            self.ref_counts,
+            self.alt_counts,
+            self.het_counts,
+            " ".join([str(x) for x in self.genotypes]),
+        )
+
 
 def sys_call(cmd):
     """Execute cmd and capture stdout and stderr
@@ -163,12 +173,12 @@ def sys_call(cmd):
     :return: (stdout, stderr)
     """
     try:
-        stdout = subprocess.check_output(cmd, shell=True, encoding='utf8')
+        stdout = subprocess.check_output(cmd, shell=True, encoding="utf8")
         return stdout
     except:
         return None
-    #p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-    #return p.stdout.readlines(), p.stderr.readlines()
+    # p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+    # return p.stdout.readlines(), p.stderr.readlines()
 
 
 def Exit(msg, code=1):
@@ -179,6 +189,7 @@ def Exit(msg, code=1):
     print(msg, file=stderr)
     sys.exit(code)
 
+
 def ExitIf(msg, do_exit, code=1):
     """Exit if do_exit is true
 
@@ -188,6 +199,7 @@ def ExitIf(msg, do_exit, code=1):
     """
     if do_exit:
         Exit(msg, code)
+
 
 def BuildReportLine(key, value, offset=None):
     """Prepare key/value for reporting in configuration report
@@ -204,7 +216,7 @@ def BuildReportLine(key, value, offset=None):
 
     try:
         try:
-            v=int(value)
+            v = int(value)
             return reportline + "%*s" % (offset, str(value))
         except:
             pass
@@ -213,15 +225,16 @@ def BuildReportLine(key, value, offset=None):
     except:
         return reportline + "%*s" % (offset - 1 + len(value), value)
 
+
 def get_lines(fn, split=False):
-    '''Simplify very basic file loading, where we just stash the contents into a list'''
+    """Simplify very basic file loading, where we just stash the contents into a list"""
     lines = []
-    
+
     with open(fn) as f:
         for line in f:
             if split:
                 lines.append(line.strip().split())
             else:
                 lines.append(line.strip())
-            
+
     return lines
