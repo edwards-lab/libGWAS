@@ -4,7 +4,6 @@ import subprocess
 import sys
 from sys import stderr
 import numpy
-from . import exceptions
 import datetime
 import math
 

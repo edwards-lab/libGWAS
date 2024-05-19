@@ -1,9 +1,8 @@
-MVtest GWAS Analysis
+GWAS Library
 ====================
 
-MVtest is an analysis tool that can be run on many common file formats using
-syntax similar to programs you've probably already used. Instructions for
-installation can be found below.
+libGWAS is a set of libraries used by various applications for parsing 
+and manipulating GWAS datasets. 
 
 Installation
 ============
